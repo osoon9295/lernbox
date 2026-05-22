@@ -20,3 +20,19 @@ export const signupSchema = z.object({
  * 별도로 interface 작성 안 해도 됨.
  */
 export type SignupInput = z.infer<typeof signupSchema>;
+
+/**
+ * 로그인 요청 바디 스키마.
+ * 회원가입과 달리 password에 길이 제한을 두지 않는다.
+ * 이미 가입된 사용자가 기존 비밀번호로 로그인하는 거라,
+ * 회원가입 시점의 정책 변경에 영향받지 않게 한다.
+ */
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "이메일을 입력해주세요.")
+    .email("올바른 이메일 형식이 아닙니다."),
+  password: z.string().min(1, "비밀번호를 입력해주세요."),
+});
+
+export type LoginInput = z.infer<typeof loginSchema>;
