@@ -5,14 +5,15 @@ import { z } from "zod";
  * 검증과 타입 추론을 한 번에 처리한다.
  */
 export const signupSchema = z.object({
-  email: z
-    .string()
-    .min(1, "이메일을 입력해주세요.")
-    .email("올바른 이메일 형식이 아닙니다."),
+  // z.string().email()은 Zod v4에서 deprecated → z.email()이 올바른 API
+  email: z.email("올바른 이메일 형식이 아닙니다."),
   password: z
     .string()
     .min(8, "비밀번호는 최소 8자 이상이어야 합니다.")
-    .max(100, "비밀번호가 너무 깁니다."),
+    .max(100, "비밀번호가 너무 깁니다.")
+    .regex(/[A-Za-z]/, "영문자를 포함해야 합니다.")
+    .regex(/[0-9]/, "숫자를 포함해야 합니다.")
+    .regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/, "특수문자를 포함해야 합니다."),
 });
 
 /**
@@ -28,10 +29,7 @@ export type SignupInput = z.infer<typeof signupSchema>;
  * 회원가입 시점의 정책 변경에 영향받지 않게 한다.
  */
 export const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, "이메일을 입력해주세요.")
-    .email("올바른 이메일 형식이 아닙니다."),
+  email: z.email("올바른 이메일 형식이 아닙니다."),
   password: z.string().min(1, "비밀번호를 입력해주세요."),
 });
 
