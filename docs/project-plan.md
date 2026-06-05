@@ -1,0 +1,173 @@
+# 📦 Lernbox 프로젝트 기획서
+ 
+> 개인 프로젝트 — 독일어 단어장 + AI 예문 생성 + 간격 반복 복습
+> 최종 업데이트: 2026.06.03 (Day 4 진행 중)
+ 
+---
+ 
+## 1. 프로젝트 개요
+ 
+### 컨셉 한 줄
+> **회화/실전 수준 학습자가 마주친 단어를, AI가 맥락 있는 예문과 함께 풀어주고, 간격 반복으로 잊지 않게 도와주는 단어장.**
+ 
+### 타겟 사용자
+어학연수 경험자 수준 (회화/실전 단계). 초보용 단어장과 차별점은 **맥락 있는 예문과 뉘앙스 설명**.
+ 
+### 왜 이 프로젝트인가
+- 본인의 독일 Bochum 어학연수 경험 + 개발자라는 두 정체성을 합친 프로젝트
+- "독일어 + 개발 = 본인만의 독특한 조합"으로 다른 지원자와 차별화
+- 본인이 직접 쓸 수 있는 도구 → 진정성
+ 
+---
+ 
+## 2. 프로젝트로 배울점
+ 
+| 부족했던 부분 | 어떻게 해결되는지 |
+|--------------|-----------------|
+| 개인 프로젝트 없음 | Lernbox 완성으로 해결 |
+| 테스트 코드 경험 없음 | SRS 알고리즘 + RTL 테스트로 해결 |
+| AI 도구 활용 경험 없음 | Claude Code로 개발 + Claude API 활용 |
+| CI/CD 실무 경험 없음 | GitHub Actions로 자동화 |
+| 혼자 끝까지 만든 경험 없음 | 처음부터 끝까지 본인 설계 |
+ 
+---
+ 
+## 3. 핵심 기능 (MVP)
+ 
+### 1️⃣ 단어 추가 → AI가 자동으로 풀어줌
+- 단어 입력 → AI가 자동 생성:
+  - 뜻 (한국어/독일어 정의)
+  - 품사, 격, 분리동사 등 문법 정보
+  - 회화 수준 예문 3개 (B1~B2 난이도)
+  - 비슷한 단어와의 뉘앙스 차이
+  - 사용자가 입력한 문맥(선택) 반영
+- **기술 포인트**: 스트리밍 응답
+ 
+### 2️⃣ 간격 반복 복습 (SRS - Spaced Repetition)
+- Anki 알고리즘(SM-2) 기반
+- 1일 → 3일 → 7일 → 14일 → 30일 간격
+- "기억나요/아니요" 선택으로 다음 복습 날짜 자동 조정
+- **기술 포인트**: 비즈니스 로직이라 **테스트 코드 작성하기 가장 좋은 부분**
+ 
+### 3️⃣ 단어장 (목록 보기)
+- 추가한 단어들 리스트
+- 검색, 필터(미복습/복습완료), 정렬
+ 
+---
+ 
+## 4. 기술 스택 (확정)
+ 
+| 영역 | 기술 |
+|------|------|
+| Framework | Next.js (App Router) + TypeScript |
+| Styling | Tailwind + shadcn-ui |
+| State | Zustand + TanStack Query |
+| DB | Supabase (PostgreSQL) |
+| ORM | Prisma 7 (driver adapter 방식) |
+| 인증 | 자체 구현 (bcrypt + jose + Cookie + 미들웨어) |
+| Validation | Zod |
+| AI | Claude API (스트리밍) |
+| 배포 | Vercel |
+| 테스트 | Jest + RTL |
+| CI/CD | GitHub Actions |
+| AI 코딩 도구 | Claude Code |
+ 
+---
+ 
+## 5. 진행 상황
+ 
+### ✅ Day 1 (5/19 화) — 셋업
+- Claude Code 설치 + Pro 연동 + VS Code 익스텐션
+- GitHub 레포 생성 (`lernbox`)
+- Next.js + TypeScript + Tailwind 셋업
+ 
+### ✅ Day 2 (5/20 수) — DB 연동
+- Prisma 7 + Supabase 연동 (Seoul 리전)
+- Prisma 7 호환성 이슈 해결 (`directUrl` deprecated → prisma.config.ts로 이전)
+- User 모델 정의 + 첫 마이그레이션 성공
+ 
+### ✅ Day 3 (5/21 목) — 회원가입 API
+- bcrypt 비밀번호 해싱 유틸 (cost factor 12)
+- jose 기반 JWT 발급/검증 유틸 (Access 15분 / Refresh 7일, 비밀키 이중화)
+- Prisma 7 driver adapter 적용 (PrismaPg)
+- Zod 입력값 검증 스키마
+- HttpOnly + Secure + SameSite Cookie 유틸
+- `POST /api/auth/signup` 구현 (중복 체크 + 토큰 발급)
+- 5가지 시나리오 테스트 통과
+ 
+### ✅ Day 4 (5/22 금) — 로그인/로그아웃 API
+- `POST /api/auth/login` 구현 (User Enumeration 방어)
+- `POST /api/auth/logout` 구현 (Cookie 삭제)
+- 5가지 시나리오 테스트 통과
+ 
+### ✅ 워밍업 작업 (5/29 목)
+- `.env.example` 추가
+- `.gitignore` 화이트리스트 패턴 적용 (`.env*` + `!.env.example`)
+ 
+### 🟡 Day 4 마무리 (6/3 수) — 진행 예정
+- 인증 미들웨어
+- 회원가입 / 로그인 페이지
+- 처음으로 "회원가입 → 로그인 → 보호된 페이지" 전체 흐름 동작 확인
+ 
+### 다음 일정
+- Day 5: 단어 CRUD API + 단어장 페이지
+- Day 6: Claude API 연동 + AI 분석
+- Day 7: 스트리밍 + SRS 알고리즘
+- Day 8: SRS 테스트 코드 + 복습 페이지
+- Day 9: 컴포넌트 테스트
+- Day 10: GitHub Actions CI + Vercel 배포
+- Day 11: README 정성껏 작성 + 이력서 반영
+ 
+---
+ 
+## 6. 중요 포인트
+ 
+### 환경 셋업
+- `.env*` 광범위 차단 + `!.env.example` 명시적 허용 (deny by default + explicit allow)
+- DB connection pooling (6543) vs direct (5432) 용도별 분리
+- Prisma 마이그레이션 이력 Git 추적
+ 
+### Prisma 7 적응
+- Rust-free 클라이언트 + driver adapter 방식 적용
+- 최신 버전 호환성 이슈를 직접 해결한 경험
+ 
+### 인증/보안
+- bcrypt cost factor 12 (보안과 사용성의 의도적 트레이드오프)
+- jose 선택 이유: Edge Runtime 호환 (jsonwebtoken과의 차이 설명 가능)
+- Access/Refresh 토큰 분리 + 비밀키 이중화
+- HttpOnly + Secure + SameSite Cookie로 XSS/CSRF 방어
+- DB unique + 앱 레벨 중복 체크 (Defense in depth)
+- User Enumeration 방어 (로그인 실패 메시지 통일)
+- 환경변수 fail-fast 처리
+ 
+### 코드 설계
+- 인증 유틸 분리 (password, jwt, cookies) → 재사용성 입증
+- Prisma Client 싱글톤 (Hot Reload 환경 대응)
+- Zod로 검증 + 타입 추론 일원화
+- `Promise.all`로 독립 비동기 병렬화
+- 에러 로깅 분리 (내부는 로그, 사용자는 일반화 메시지)
+- HTTP 상태 코드 의미적 사용 (201, 400, 401, 409, 500)
+ 
+### 보안 사고 대응
+- DB credential 노출 시 즉시 회전(rotation) 대응 경험
+- 이후 credential 마스킹 습관 정착
+ 
+### Git 협업
+- Conventional Commits 적용
+- 영어 커밋 메시지 + AI 도구로 표현 다듬는 워크플로우
+ 
+---
+ 
+## 7. 환경 정보
+ 
+- **OS**: macOS (darwin arm64)
+- **Node.js**: v22.14.0
+- **Prisma**: 7.8.0
+- **TypeScript**: 5.9.3
+ 
+ 
+### 주요 URL
+- GitHub: https://github.com/osoon9295/lernbox
+- Supabase: lernbox (Northeast Asia - Seoul 리전)
+- 배포 (예정): https://lernbox.vercel.app
+ 
