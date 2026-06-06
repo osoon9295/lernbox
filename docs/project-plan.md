@@ -1,7 +1,7 @@
 # 📦 Lernbox 프로젝트 기획서
  
 > 개인 프로젝트 — 독일어 단어장 + AI 예문 생성 + 간격 반복 복습
-> 최종 업데이트: 2026.06.03 (Day 4 진행 중)
+> 최종 업데이트: 2026.06.06 (Day 5 예정)
  
 ---
  
@@ -104,11 +104,21 @@
 - `.env.example` 추가
 - `.gitignore` 화이트리스트 패턴 적용 (`.env*` + `!.env.example`)
  
-### 🟡 Day 4 마무리 (6/3 수) — 진행 예정
-- 인증 미들웨어
-- 회원가입 / 로그인 페이지
-- 처음으로 "회원가입 → 로그인 → 보호된 페이지" 전체 흐름 동작 확인
- 
+### ✅ Day 4 마무리 (6/5 목) — 인증 미들웨어 + UI
+- `middleware.ts` 구현 (Edge Runtime, jose 기반 JWT 검증)
+  - 비로그인 → 보호 경로 접근 시 `/login` 리다이렉트
+  - 로그인 상태 → `/login`, `/signup` 접근 시 `/dashboard` 리다이렉트
+- shadcn-ui 설치 (Tailwind v4 호환, `npx shadcn@latest init`)
+- `/login`, `/signup` 페이지 구현 (shadcn Card + Input + Button)
+  - 실제 API(`/api/auth/signup`, `/api/auth/login`)와 연결
+  - 필드별 Zod 에러 메시지 표시
+- 비밀번호 정책 강화: 영문 + 숫자 + 특수문자 필수
+- 실시간 비밀번호 요건 체크리스트 (조건 미충족 시 버튼 비활성화)
+- Zod v4 API 마이그레이션: `z.string().email()` → `z.email()`
+- React 19 타입 마이그레이션: deprecated `FormEvent` → `SyntheticEvent`
+- 임시 `/dashboard` 페이지 (리다이렉트 목적지)
+- "회원가입 → 로그인 → 보호된 페이지" 전체 흐름 동작 확인 ✓
+
 ### 다음 일정
 - Day 5: 단어 CRUD API + 단어장 페이지
 - Day 6: Claude API 연동 + AI 분석
@@ -152,6 +162,17 @@
 - DB credential 노출 시 즉시 회전(rotation) 대응 경험
 - 이후 credential 마스킹 습관 정착
  
+### 미들웨어 설계
+- Edge Runtime에서 동작 → Node.js 전용 라이브러리 사용 불가
+- jose 선택 이유가 여기서도 증명됨 (Web Crypto API 기반이라 Edge 호환)
+- 불필요한 JWT 검증 방지: 보호/인증 경로가 아니면 검증 자체를 skip
+
+### 라이브러리 버전 적응
+- Zod v4: `z.string().email()` deprecated → `z.email()` 독립 타입으로 분리
+- React 19: `FormEvent` deprecated ("doesn't actually exist") → `SyntheticEvent` 사용
+- shadcn-ui: Tailwind v4 환경에서 `@import "tailwindcss"` 방식 자동 감지하여 설치
+- 클라이언트 검증 규칙을 서버 Zod 스키마와 동일하게 유지 → 불필요한 API 왕복 방지
+
 ### Git 협업
 - Conventional Commits 적용
 - 영어 커밋 메시지 + AI 도구로 표현 다듬는 워크플로우
