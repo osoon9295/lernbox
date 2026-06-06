@@ -1,7 +1,7 @@
 # 📦 Lernbox 프로젝트 기획서
  
 > 개인 프로젝트 — 독일어 단어장 + AI 예문 생성 + 간격 반복 복습
-> 최종 업데이트: 2026.06.06 (Day 5 예정)
+> 최종 업데이트: 2026.06.06 (Day 6 예정)
  
 ---
  
@@ -119,8 +119,20 @@
 - 임시 `/dashboard` 페이지 (리다이렉트 목적지)
 - "회원가입 → 로그인 → 보호된 페이지" 전체 흐름 동작 확인 ✓
 
+### ✅ Day 5 (6/6 금) — 단어 CRUD API + 단어장 페이지
+- `Word` 모델 추가 (Prisma 스키마) + 마이그레이션 (`20260606_add_word_model`)
+  - `userId` 외래키 + `onDelete: Cascade` (유저 삭제 시 단어도 같이 삭제)
+- `getAuthenticatedUserId` 헬퍼 추가 (`app/lib/auth/session.ts`)
+  - API 라우트마다 토큰 검증 코드 반복 방지
+- Zod 스키마 추가: `createWordSchema` / `updateWordSchema` (`.partial()`)
+- `GET, POST /api/words` 구현
+- `PATCH, DELETE /api/words/[id]` 구현
+  - PATCH 선택 이유: `.partial()` 스키마로 부분 수정 지원, AI 필드 추가 시 확장성
+  - IDOR 방어: 수정/삭제 전 `word.userId === 요청자 userId` 검증
+- 대시보드 페이지 구현: 단어 추가 / 인라인 수정 / 삭제 UI
+- Supabase IPv6-only direct connection 이슈 해결 → session mode pooler(5432)를 `DIRECT_URL`로 사용
+
 ### 다음 일정
-- Day 5: 단어 CRUD API + 단어장 페이지
 - Day 6: Claude API 연동 + AI 분석
 - Day 7: 스트리밍 + SRS 알고리즘
 - Day 8: SRS 테스트 코드 + 복습 페이지
@@ -162,6 +174,13 @@
 - DB credential 노출 시 즉시 회전(rotation) 대응 경험
 - 이후 credential 마스킹 습관 정착
  
+### API 설계
+- API 라우트는 미들웨어 보호 밖 → 라우트 핸들러 내부에서 직접 토큰 검증
+- 반복 로직은 헬퍼로 추출 (`getAuthenticatedUserId`) — 유지보수성
+- PUT vs PATCH: 부분 수정(`.partial()`)이 필요할 때는 PATCH, AI 필드 추가 후에도 기존 필드만 보내도 동작
+- IDOR(Insecure Direct Object Reference) 방어: 리소스 조회 후 소유자 검증 필수
+- Supabase free tier: direct connection은 IPv6 전용 → session pooler(5432)로 대체
+
 ### 미들웨어 설계
 - Edge Runtime에서 동작 → Node.js 전용 라이브러리 사용 불가
 - jose 선택 이유가 여기서도 증명됨 (Web Crypto API 기반이라 Edge 호환)
