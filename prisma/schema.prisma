@@ -16,4 +16,15 @@ model User {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  words     Word[]
+}
+
+model Word {
+  id        String   @id @default(uuid())
+  word      String
+  meaning   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

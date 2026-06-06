@@ -34,3 +34,13 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const createWordSchema = z.object({
+  word: z.string().min(1, "단어를 입력해주세요.").max(100),
+  meaning: z.string().min(1, "뜻을 입력해주세요.").max(500),
+});
+
+export const updateWordSchema = createWordSchema.partial();
+
+export type CreateWordInput = z.infer<typeof createWordSchema>;
+export type UpdateWordInput = z.infer<typeof updateWordSchema>;
