@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const words = await prisma.word.findMany({
     where: { userId: auth.userId },
     orderBy: { createdAt: "desc" },
-    select: { id: true, word: true, meaning: true, createdAt: true },
+    select: { id: true, word: true, meaning: true, aiAnalysis: true, analyzedAt: true, createdAt: true },
   });
 
   return NextResponse.json({ words });

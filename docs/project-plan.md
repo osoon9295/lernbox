@@ -1,7 +1,7 @@
 # 📦 Lernbox 프로젝트 기획서
  
 > 개인 프로젝트 — 독일어 단어장 + AI 예문 생성 + 간격 반복 복습
-> 최종 업데이트: 2026.06.06 (Day 6 예정)
+> 최종 업데이트: 2026.06.07 (Day 6 완료)
  
 ---
  
@@ -132,9 +132,24 @@
 - 대시보드 페이지 구현: 단어 추가 / 인라인 수정 / 삭제 UI
 - Supabase IPv6-only direct connection 이슈 해결 → session mode pooler(5432)를 `DIRECT_URL`로 사용
 
+### ✅ Day 6 (6/7 토) — Claude API 연동 + AI 스트리밍 분석
+- `Word` 모델에 `aiAnalysis Json?` / `analyzedAt DateTime?` 필드 추가 + 마이그레이션
+- `app/lib/anthropic.ts`: Anthropic 클라이언트 싱글톤 (getEnv로 키 없으면 즉시 에러)
+- `POST /api/words/[id]/analyze` 구현
+  - IDOR 방어: `word.userId === 요청자 userId` 검증
+  - `anthropic.messages.stream()` SSE 스트리밍 → `ReadableStream`으로 클라이언트에 실시간 전송
+  - 스트림 완료 후 전체 텍스트를 DB에 저장 (`aiAnalysis`, `analyzedAt`)
+  - 프롬프트: B1~B2 수준 학습자용 5섹션 한국어 분석 (뜻/문법/예문3개/뉘앙스/학습팁)
+  - 모델: `claude-opus-4-8`
+- 대시보드 페이지 업데이트
+  - "AI 분석" 버튼 → 스트리밍 실시간 표시 (청크 단위로 화면 갱신)
+  - 분석 중 커서 애니메이션 (`animate-pulse`)
+  - 저장된 분석은 새로고침 후에도 유지
+- Anthropic API 별도 과금 구조 확인 (Claude.ai 구독과 독립)
+- curl + Node fetch 기반 E2E 검증: 37청크, 1622자, 18.5초 스트리밍 정상 동작 확인
+
 ### 다음 일정
-- Day 6: Claude API 연동 + AI 분석
-- Day 7: 스트리밍 + SRS 알고리즘
+- Day 7: SRS 알고리즘 + 복습 기능
 - Day 8: SRS 테스트 코드 + 복습 페이지
 - Day 9: 컴포넌트 테스트
 - Day 10: GitHub Actions CI + Vercel 배포
