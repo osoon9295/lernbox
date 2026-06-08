@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type SyntheticEvent } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,7 +134,12 @@ export default function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 space-y-8">
-      <h1 className="text-2xl font-bold">내 단어장</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">내 단어장</h1>
+        <Link href="/review">
+          <Button variant="outline">복습하기</Button>
+        </Link>
+      </div>
 
       {/* 단어 추가 폼 */}
       <Card>

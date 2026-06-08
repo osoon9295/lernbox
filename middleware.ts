@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/app/lib/auth/jwt";
 
-const PROTECTED_ROUTES = ["/dashboard"];
+const PROTECTED_ROUTES = ["/dashboard", "/review"];
 const AUTH_ROUTES = ["/login", "/signup"];
 
 function isProtected(pathname: string): boolean {
