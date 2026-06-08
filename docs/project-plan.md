@@ -1,7 +1,7 @@
 # 📦 Lernbox 프로젝트 기획서
  
 > 개인 프로젝트 — 독일어 단어장 + AI 예문 생성 + 간격 반복 복습
-> 최종 업데이트: 2026.06.07 (Day 6 완료)
+> 최종 업데이트: 2026.06.08 (Day 9 완료)
  
 ---
  
@@ -148,10 +148,40 @@
 - Anthropic API 별도 과금 구조 확인 (Claude.ai 구독과 독립)
 - curl + Node fetch 기반 E2E 검증: 37청크, 1622자, 18.5초 스트리밍 정상 동작 확인
 
+### ✅ Day 7 (6/8 일) — SRS 알고리즘 + 복습 기능
+- `Word` 모델에 SRS 필드 추가 + 마이그레이션
+  - `easeFactor Float @default(2.5)` / `interval Int @default(0)` / `repetitions Int @default(0)`
+  - `dueAt DateTime?` / `lastReviewedAt DateTime?`
+- `app/lib/srs.ts`: SM-2 알고리즘 구현 (순수 함수)
+  - grade 0/3/4/5 → interval 성장 (1→6→N×easeFactor), 실패 시 리셋
+  - easeFactor 매 복습마다 조정 (최소 1.3 하한)
+- `GET /api/review`: `dueAt ≤ 지금` 또는 `null`인 단어 반환
+- `POST /api/words/[id]/review`: grade 받아 SM-2 계산 → DB 업데이트 (IDOR 방어 포함)
+- `/review` 페이지: 카드 → 답 보기 → 난이도 4단계(다시/어려움/좋음/쉬움) → 다음 카드
+  - AI 분석 있으면 답 공개 시 함께 표시, 진행 바 포함
+- `/dashboard` → "복습하기" 버튼 추가 (Link)
+- 미들웨어 보호 경로에 `/review` 추가
+- E2E 검증: grade=4 복습 후 `interval=1, dueAt=내일` 저장, 복습 목록에서 즉시 제거 ✓
+
+### ✅ Day 8 (6/8 일) — SRS 테스트 코드
+- Jest + RTL 셋업: `jest`, `jest-environment-jsdom`, `@testing-library/react`, `ts-node`
+- `next/jest`로 Jest 설정 (`jest.config.ts`), `jest.setup.ts`로 `jest-dom` 연결
+- `app/lib/srs.test.ts` — SM-2 단위 테스트 17개
+  - grade별 interval/repetitions 계산, easeFactor 조정, 1.3 하한 보장
+  - 연속 성공 시 interval 1→6→15 성장 시뮬레이션
+- `app/api/words/[id]/review/route.test.ts` — API 라우트 테스트 8개
+  - 정상 제출, 잘못된 grade(400), IDOR 방어(404), 미인증(401), 단어 없음(404)
+  - Prisma/auth 모킹으로 DB 없이 라우트 로직만 검증
+
+### ✅ Day 9 (6/8 일) — 컴포넌트 테스트
+- `app/review/page.test.tsx` — ReviewPage RTL 컴포넌트 테스트 9개
+  - 로딩 중 상태, 빈 상태(단어 없음), 단어 카드 + 진행 표시
+  - "답 보기" 클릭 → 뜻/AI분석/난이도 버튼 표시
+  - 난이도 클릭 → POST 호출 확인, 다음 카드로 전환
+  - 카드 전환 시 뜻 다시 숨겨짐, 마지막 카드 완료 후 완료 화면
+- **전체 테스트: 34개 통과** (srs 17 + API 8 + 컴포넌트 9)
+
 ### 다음 일정
-- Day 7: SRS 알고리즘 + 복습 기능
-- Day 8: SRS 테스트 코드 + 복습 페이지
-- Day 9: 컴포넌트 테스트
 - Day 10: GitHub Actions CI + Vercel 배포
 - Day 11: README 정성껏 작성 + 이력서 반영
  
