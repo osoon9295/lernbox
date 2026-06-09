@@ -17,6 +17,13 @@ interface Word {
   createdAt: string;
 }
 
+interface Stats {
+  total: number;
+  reviewedToday: number;
+  startRate: number;
+  streak: number;
+}
+
 export default function DashboardPage() {
   const [words, setWords] = useState<Word[]>([]);
   const [newWord, setNewWord] = useState("");
@@ -33,8 +40,11 @@ export default function DashboardPage() {
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState<Record<string, string>>({});
 
+  const [stats, setStats] = useState<Stats | null>(null);
+
   useEffect(() => {
     fetchWords();
+    fetchStats();
   }, []);
 
   async function fetchWords() {
@@ -42,6 +52,14 @@ export default function DashboardPage() {
     if (res.ok) {
       const data = await res.json();
       setWords(data.words);
+    }
+  }
+
+  async function fetchStats() {
+    const res = await fetch("/api/stats");
+    if (res.ok) {
+      const data = await res.json();
+      setStats(data);
     }
   }
 
@@ -63,6 +81,7 @@ export default function DashboardPage() {
       setWords((prev) => [data.word, ...prev]);
       setNewWord("");
       setNewMeaning("");
+      fetchStats();
     } finally {
       setAdding(false);
     }
@@ -91,6 +110,7 @@ export default function DashboardPage() {
     const res = await fetch(`/api/words/${id}`, { method: "DELETE" });
     if (res.ok) {
       setWords((prev) => prev.filter((w) => w.id !== id));
+      fetchStats();
     }
   }
 
@@ -142,6 +162,26 @@ export default function DashboardPage() {
           <Button variant="outline">복습하기</Button>
         </Link>
       </div>
+
+      {/* 학습 통계 */}
+      {stats && (
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: "전체 단어", value: `${stats.total}개`, icon: "📚" },
+            { label: "오늘 복습", value: `${stats.reviewedToday}개`, icon: "✅" },
+            { label: "학습 시작률", value: `${stats.startRate}%`, icon: "📈" },
+            { label: "연속 학습일", value: `${stats.streak}일`, icon: "🔥" },
+          ].map(({ label, value, icon }) => (
+            <Card key={label}>
+              <CardContent className="pt-4 pb-3 text-center space-y-1">
+                <p className="text-xl">{icon}</p>
+                <p className="text-lg font-bold">{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* 단어 추가 폼 */}
       <Card>
