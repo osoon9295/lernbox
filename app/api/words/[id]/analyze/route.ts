@@ -32,7 +32,7 @@ export async function POST(
       try {
         // 스트리밍 응답: 토큰이 생성될 때마다 클라이언트로 즉시 전송
         const anthropicStream = anthropic.messages.stream({
-          model: "claude-opus-4-8",
+          model: "claude-haiku-4-5",
           max_tokens: 2048,
           messages: [{ role: "user", content: prompt }],
         });
