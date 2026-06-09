@@ -3,6 +3,7 @@
 import { useState, useEffect, type SyntheticEvent } from "react";
 import Link from "next/link";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -222,7 +223,7 @@ export default function DashboardPage() {
                 {(streamingText[w.id] || w.aiAnalysis?.text) && (
                   <div className="border-t pt-3">
                     <div className="prose prose-sm max-w-none text-foreground">
-                      <Markdown>{streamingText[w.id] || w.aiAnalysis?.text}</Markdown>
+                      <Markdown remarkPlugins={[remarkGfm]}>{streamingText[w.id] || w.aiAnalysis?.text}</Markdown>
                     </div>
                     {analyzingId === w.id && (
                       <span className="inline-block w-1 h-4 bg-foreground animate-pulse ml-0.5" />

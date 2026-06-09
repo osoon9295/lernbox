@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -116,7 +117,7 @@ export default function ReviewPage() {
               {word.aiAnalysis?.text && (
                 <div className="border-t pt-4 max-h-60 overflow-y-auto">
                   <div className="prose prose-sm max-w-none text-foreground">
-                    <Markdown>{word.aiAnalysis.text}</Markdown>
+                    <Markdown remarkPlugins={[remarkGfm]}>{word.aiAnalysis.text}</Markdown>
                   </div>
                 </div>
               )}
