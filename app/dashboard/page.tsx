@@ -214,8 +214,8 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <>
-                  <div className="h-5 w-10 rounded bg-muted animate-pulse" />
-                  <div className="h-3 w-14 rounded bg-muted animate-pulse" />
+                  <div className="h-6 w-3/4 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-full rounded bg-muted animate-pulse" />
                 </>
               )}
             </CardContent>
@@ -261,18 +261,24 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* 로딩 skeleton */}
+        {/* 로딩 skeleton — 실제 단어 카드와 동일한 구조·높이로 레이아웃 점프 방지 */}
         {words === null && (
           <div className="space-y-3">
-            {[0, 1, 2].map((i) => (
+            {[0, 1, 2, 3, 4].map((i) => (
               <Card key={i}>
                 <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <div className="h-6 w-28 rounded bg-muted animate-pulse" />
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      {/* text-2xl word placeholder */}
+                      <div className="h-8 w-1/3 rounded bg-muted animate-pulse" />
+                      {/* meaning placeholder */}
+                      <div className="h-4 w-1/4 rounded bg-muted animate-pulse" />
                     </div>
-                    <div className="h-8 w-20 rounded bg-muted animate-pulse" />
+                    <div className="flex gap-1 shrink-0">
+                      <div className="h-8 w-16 rounded bg-muted animate-pulse" />
+                      <div className="h-8 w-10 rounded bg-muted animate-pulse" />
+                      <div className="h-8 w-10 rounded bg-muted animate-pulse" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -75,8 +75,32 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-20 text-center text-muted-foreground">
-        불러오는 중...
+      <main className="mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
+        {/* 헤더 skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="h-6 w-20 rounded bg-muted animate-pulse" />
+          <div className="h-4 w-12 rounded bg-muted animate-pulse" />
+        </div>
+        {/* 문제 카드 skeleton — 실제와 동일한 h-52 */}
+        <Card className="h-52">
+          <CardContent className="h-full flex flex-col items-center justify-center gap-3 pt-0">
+            <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+            <div className="h-8 w-1/2 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-1/3 rounded bg-muted animate-pulse" />
+          </CardContent>
+        </Card>
+        {/* 피드백 영역 skeleton — 실제와 동일한 h-12 */}
+        <div className="h-12 rounded-lg border border-transparent" />
+        {/* 입력 + 버튼 skeleton */}
+        <div className="flex gap-2">
+          <div className="h-10 flex-1 rounded bg-muted animate-pulse" />
+          <div className="h-10 w-16 rounded bg-muted animate-pulse" />
+          <div className="h-10 w-16 rounded bg-muted animate-pulse opacity-0" />
+        </div>
+        {/* 진행 바 skeleton */}
+        <div className="w-full bg-muted rounded-full h-1.5" />
+        {/* 점수 skeleton */}
+        <div className="h-3 w-24 mx-auto rounded bg-muted animate-pulse" />
       </main>
     );
   }
