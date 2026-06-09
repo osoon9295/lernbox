@@ -24,19 +24,29 @@ interface Stats {
   streak: number;
 }
 
+const STAT_CONFIGS: {
+  label: string;
+  icon: string;
+  getValue: (s: Stats) => string;
+}[] = [
+  { label: "전체 단어", icon: "📚", getValue: (s) => `${s.total}개` },
+  { label: "오늘 복습", icon: "✅", getValue: (s) => `${s.reviewedToday}개` },
+  { label: "학습 시작률", icon: "📈", getValue: (s) => `${s.startRate}%` },
+  { label: "연속 학습일", icon: "🔥", getValue: (s) => `${s.streak}일` },
+];
+
 export default function DashboardPage() {
-  const [words, setWords] = useState<Word[]>([]);
+  // null = 로딩 중, [] = 로드 완료 but 비어있음
+  const [words, setWords] = useState<Word[] | null>(null);
   const [newWord, setNewWord] = useState("");
   const [newMeaning, setNewMeaning] = useState("");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 인라인 수정 상태
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editWord, setEditWord] = useState("");
   const [editMeaning, setEditMeaning] = useState("");
 
-  // AI 분석 상태: wordId → 스트리밍 중인 텍스트
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [streamingText, setStreamingText] = useState<Record<string, string>>(
     {},
@@ -81,7 +91,7 @@ export default function DashboardPage() {
         setError(data.error ?? "추가에 실패했습니다.");
         return;
       }
-      setWords((prev) => [data.word, ...prev]);
+      setWords((prev) => [data.word, ...(prev ?? [])]);
       setNewWord("");
       setNewMeaning("");
       fetchStats();
@@ -104,7 +114,9 @@ export default function DashboardPage() {
     });
     if (res.ok) {
       const data = await res.json();
-      setWords((prev) => prev.map((w) => (w.id === id ? data.word : w)));
+      setWords((prev) =>
+        prev ? prev.map((w) => (w.id === id ? data.word : w)) : prev,
+      );
       setEditingId(null);
     }
   }
@@ -112,13 +124,11 @@ export default function DashboardPage() {
   async function handleDelete(id: string) {
     const res = await fetch(`/api/words/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setWords((prev) => prev.filter((w) => w.id !== id));
+      setWords((prev) => (prev ? prev.filter((w) => w.id !== id) : prev));
       fetchStats();
     }
   }
 
-  // Claude API 스트리밍 분석
-  // ReadableStream을 청크 단위로 읽어 실시간으로 화면에 표시한다.
   async function handleAnalyze(id: string) {
     setAnalyzingId(id);
     setStreamingText((prev) => ({ ...prev, [id]: "" }));
@@ -144,25 +154,32 @@ export default function DashboardPage() {
         setStreamingText((prev) => ({ ...prev, [id]: accumulated }));
       }
 
-      // 스트림 완료 후 단어 목록의 aiAnalysis 업데이트 (재fetch 없이)
       setWords((prev) =>
-        prev.map((w) =>
-          w.id === id
-            ? {
-                ...w,
-                aiAnalysis: { text: accumulated },
-                analyzedAt: new Date().toISOString(),
-              }
-            : w,
-        ),
+        prev
+          ? prev.map((w) =>
+              w.id === id
+                ? {
+                    ...w,
+                    aiAnalysis: { text: accumulated },
+                    analyzedAt: new Date().toISOString(),
+                  }
+                : w,
+            )
+          : prev,
       );
     } finally {
       setAnalyzingId(null);
     }
   }
 
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/";
+  }
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 space-y-8">
+    <main className="mx-auto max-w-2xl px-4 py-10 space-y-6">
+      {/* 헤더 */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">내 단어장</h1>
         <div className="flex gap-2">
@@ -172,34 +189,41 @@ export default function DashboardPage() {
           <Link href="/review">
             <Button variant="outline">복습하기</Button>
           </Link>
+          <Button
+            variant="ghost"
+            className="text-muted-foreground"
+            onClick={handleLogout}
+          >
+            로그아웃
+          </Button>
         </div>
       </div>
 
-      {/* 학습 통계 */}
-      {stats && (
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: "전체 단어", value: `${stats.total}개`, icon: "📚" },
-            {
-              label: "오늘 복습",
-              value: `${stats.reviewedToday}개`,
-              icon: "✅",
-            },
-            { label: "학습 시작률", value: `${stats.startRate}%`, icon: "📈" },
-            { label: "연속 학습일", value: `${stats.streak}일`, icon: "🔥" },
-          ].map(({ label, value, icon }) => (
-            <Card key={label}>
-              <CardContent className="pt-4 pb-3 text-center space-y-1">
-                <p className="text-xl">{icon}</p>
-                <p className="text-lg font-bold">{value}</p>
-                <p className="text-xs text-muted-foreground">{label}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      {/* 학습 통계 — 항상 렌더링, 로딩 중엔 skeleton */}
+      <div className="grid grid-cols-4 gap-3">
+        {STAT_CONFIGS.map(({ label, icon, getValue }) => (
+          <Card key={label}>
+            <CardContent className="h-24 flex flex-col items-center justify-center gap-1 pt-0">
+              <p className="text-xl">{icon}</p>
+              {stats ? (
+                <>
+                  <p className="text-lg font-bold leading-none">
+                    {getValue(stats)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                </>
+              ) : (
+                <>
+                  <div className="h-5 w-10 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-14 rounded bg-muted animate-pulse" />
+                </>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      {/* 단어 추가 폼 */}
+      {/* 새 단어 추가 */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">새 단어 추가</CardTitle>
@@ -228,8 +252,8 @@ export default function DashboardPage() {
 
       {/* 단어 목록 */}
       <div className="space-y-4">
-        {/* 검색 */}
-        {words.length > 0 && (
+        {/* 검색 — 단어가 있을 때만 */}
+        {words && words.length > 0 && (
           <Input
             placeholder="단어 또는 뜻 검색..."
             value={search}
@@ -237,113 +261,137 @@ export default function DashboardPage() {
           />
         )}
 
-        {(() => {
-          const query = search.trim().toLowerCase();
-          const filtered = query
-            ? words.filter(
-                (w) =>
-                  w.word.toLowerCase().includes(query) ||
-                  w.meaning.toLowerCase().includes(query),
-              )
-            : words;
-
-          if (words.length === 0)
-            return (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                아직 추가한 단어가 없습니다.
-              </p>
-            );
-
-          if (filtered.length === 0)
-            return (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                &ldquo;{search}&rdquo;에 해당하는 단어가 없습니다.
-              </p>
-            );
-
-          return filtered.map((w) =>
-            editingId === w.id ? (
-              <Card key={w.id}>
-                <CardContent className="flex gap-2 pt-4">
-                  <Input
-                    value={editWord}
-                    onChange={(e) => setEditWord(e.target.value)}
-                  />
-                  <Input
-                    value={editMeaning}
-                    onChange={(e) => setEditMeaning(e.target.value)}
-                  />
-                  <Button size="sm" onClick={() => handleEdit(w.id)}>
-                    저장
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditingId(null)}
-                  >
-                    취소
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card key={w.id}>
-                <CardContent className="pt-4 space-y-3">
+        {/* 로딩 skeleton */}
+        {words === null && (
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <Card key={i}>
+                <CardContent className="pt-4 pb-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-2xl">{w.word}</span>
-                      <span className="mx-2 text-muted-foreground">—</span>
-                      <span className="text-muted-foreground">{w.meaning}</span>
+                    <div className="space-y-2">
+                      <div className="h-6 w-28 rounded bg-muted animate-pulse" />
+                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
                     </div>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAnalyze(w.id)}
-                        disabled={analyzingId === w.id}
-                      >
-                        {analyzingId === w.id ? "분석 중..." : "AI 분석"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEdit(w)}
-                      >
-                        수정
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(w.id)}
-                      >
-                        삭제
-                      </Button>
-                    </div>
+                    <div className="h-8 w-20 rounded bg-muted animate-pulse" />
                   </div>
-
-                  {(streamingText[w.id] || w.aiAnalysis?.text) && (
-                    <div className="border-t pt-3">
-                      <div className="prose prose-sm max-w-none text-foreground">
-                        <Markdown remarkPlugins={[remarkGfm]}>
-                          {streamingText[w.id] || w.aiAnalysis?.text}
-                        </Markdown>
-                      </div>
-                      {analyzingId === w.id && (
-                        <span className="inline-block w-1 h-4 bg-foreground animate-pulse ml-0.5" />
-                      )}
-                      {w.analyzedAt && analyzingId !== w.id && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          분석일:{" "}
-                          {new Date(w.analyzedAt).toLocaleDateString("ko-KR")}
-                        </p>
-                      )}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
-            ),
-          );
-        })()}
+            ))}
+          </div>
+        )}
+
+        {/* 빈 상태 */}
+        {words !== null && words.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            아직 추가한 단어가 없습니다.
+          </p>
+        )}
+
+        {/* 단어 카드 목록 */}
+        {words !== null &&
+          words.length > 0 &&
+          (() => {
+            const query = search.trim().toLowerCase();
+            const filtered = query
+              ? words.filter(
+                  (w) =>
+                    w.word.toLowerCase().includes(query) ||
+                    w.meaning.toLowerCase().includes(query),
+                )
+              : words;
+
+            if (filtered.length === 0)
+              return (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  &ldquo;{search}&rdquo;에 해당하는 단어가 없습니다.
+                </p>
+              );
+
+            return filtered.map((w) =>
+              editingId === w.id ? (
+                <Card key={w.id}>
+                  <CardContent className="flex gap-2 pt-4">
+                    <Input
+                      value={editWord}
+                      onChange={(e) => setEditWord(e.target.value)}
+                    />
+                    <Input
+                      value={editMeaning}
+                      onChange={(e) => setEditMeaning(e.target.value)}
+                    />
+                    <Button size="sm" onClick={() => handleEdit(w.id)}>
+                      저장
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingId(null)}
+                    >
+                      취소
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card key={w.id}>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-2xl">{w.word}</span>
+                        <span className="mx-2 text-muted-foreground">—</span>
+                        <span className="text-muted-foreground">
+                          {w.meaning}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAnalyze(w.id)}
+                          disabled={analyzingId === w.id}
+                        >
+                          {analyzingId === w.id ? "분석 중..." : "AI 분석"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEdit(w)}
+                        >
+                          수정
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(w.id)}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                    </div>
+
+                    {(streamingText[w.id] || w.aiAnalysis?.text) && (
+                      <div className="border-t pt-3">
+                        <div className="prose prose-sm max-w-none text-foreground">
+                          <Markdown remarkPlugins={[remarkGfm]}>
+                            {streamingText[w.id] || w.aiAnalysis?.text}
+                          </Markdown>
+                        </div>
+                        {analyzingId === w.id && (
+                          <span className="inline-block w-1 h-4 bg-foreground animate-pulse ml-0.5" />
+                        )}
+                        {w.analyzedAt && analyzingId !== w.id && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            분석일:{" "}
+                            {new Date(w.analyzedAt).toLocaleDateString("ko-KR")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ),
+            );
+          })()}
       </div>
     </main>
   );
