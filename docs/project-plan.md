@@ -1,7 +1,7 @@
 # 📦 Lernbox 프로젝트 기획서
  
 > 개인 프로젝트 — 독일어 단어장 + AI 예문 생성 + 간격 반복 복습
-> 최종 업데이트: 2026.06.08 (Day 9 완료)
+> 최종 업데이트: 2026.06.09 (Day 10 완료)
  
 ---
  
@@ -181,8 +181,18 @@
   - 카드 전환 시 뜻 다시 숨겨짐, 마지막 카드 완료 후 완료 화면
 - **전체 테스트: 34개 통과** (srs 17 + API 8 + 컴포넌트 9)
 
+### ✅ Day 10 (6/9 월) — GitHub Actions CI + Vercel 배포
+- `.github/workflows/ci.yml` 작성
+  - 트리거: `main` push / PR
+  - Steps: checkout → Node.js 22 → npm ci → prisma generate → tsc --noEmit → npm test
+  - `prisma generate` 포함: `app/generated/prisma`는 gitignore라 CI에서 재생성 필요
+- `build` 스크립트에 `prisma generate &&` 추가 (Vercel 빌드 시 Prisma 클라이언트 없는 문제 해결)
+- Vercel 배포 완료: **https://lernbox.vercel.app**
+  - 환경변수 설정: DATABASE_URL, DIRECT_URL, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, ANTHROPIC_API_KEY
+- 배포 후 E2E 검증 (프로덕션 환경)
+  - 회원가입 → 로그인 → 단어 추가 → 복습 제출(grade=4 → interval=1, dueAt=내일) → 복습 목록 비워짐 → 로그아웃 전부 ✅
+
 ### 다음 일정
-- Day 10: GitHub Actions CI + Vercel 배포
 - Day 11: README 정성껏 작성 + 이력서 반영
  
 ---
