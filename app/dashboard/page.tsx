@@ -38,7 +38,9 @@ export default function DashboardPage() {
 
   // AI 분석 상태: wordId → 스트리밍 중인 텍스트
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
-  const [streamingText, setStreamingText] = useState<Record<string, string>>({});
+  const [streamingText, setStreamingText] = useState<Record<string, string>>(
+    {},
+  );
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [search, setSearch] = useState("");
@@ -146,7 +148,11 @@ export default function DashboardPage() {
       setWords((prev) =>
         prev.map((w) =>
           w.id === id
-            ? { ...w, aiAnalysis: { text: accumulated }, analyzedAt: new Date().toISOString() }
+            ? {
+                ...w,
+                aiAnalysis: { text: accumulated },
+                analyzedAt: new Date().toISOString(),
+              }
             : w,
         ),
       );
@@ -159,9 +165,14 @@ export default function DashboardPage() {
     <main className="mx-auto max-w-2xl px-4 py-10 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">내 단어장</h1>
-        <Link href="/review">
-          <Button variant="outline">복습하기</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/quiz">
+            <Button variant="outline">퀴즈</Button>
+          </Link>
+          <Link href="/review">
+            <Button variant="outline">복습하기</Button>
+          </Link>
+        </div>
       </div>
 
       {/* 학습 통계 */}
@@ -169,7 +180,11 @@ export default function DashboardPage() {
         <div className="grid grid-cols-4 gap-3">
           {[
             { label: "전체 단어", value: `${stats.total}개`, icon: "📚" },
-            { label: "오늘 복습", value: `${stats.reviewedToday}개`, icon: "✅" },
+            {
+              label: "오늘 복습",
+              value: `${stats.reviewedToday}개`,
+              icon: "✅",
+            },
             { label: "학습 시작률", value: `${stats.startRate}%`, icon: "📈" },
             { label: "연속 학습일", value: `${stats.streak}일`, icon: "🔥" },
           ].map(({ label, value, icon }) => (
@@ -242,7 +257,7 @@ export default function DashboardPage() {
           if (filtered.length === 0)
             return (
               <p className="text-sm text-muted-foreground text-center py-8">
-                "{search}"에 해당하는 단어가 없습니다.
+                &ldquo;{search}&rdquo;에 해당하는 단어가 없습니다.
               </p>
             );
 
@@ -250,10 +265,24 @@ export default function DashboardPage() {
             editingId === w.id ? (
               <Card key={w.id}>
                 <CardContent className="flex gap-2 pt-4">
-                  <Input value={editWord} onChange={(e) => setEditWord(e.target.value)} />
-                  <Input value={editMeaning} onChange={(e) => setEditMeaning(e.target.value)} />
-                  <Button size="sm" onClick={() => handleEdit(w.id)}>저장</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>취소</Button>
+                  <Input
+                    value={editWord}
+                    onChange={(e) => setEditWord(e.target.value)}
+                  />
+                  <Input
+                    value={editMeaning}
+                    onChange={(e) => setEditMeaning(e.target.value)}
+                  />
+                  <Button size="sm" onClick={() => handleEdit(w.id)}>
+                    저장
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditingId(null)}
+                  >
+                    취소
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
@@ -261,7 +290,7 @@ export default function DashboardPage() {
                 <CardContent className="pt-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-medium">{w.word}</span>
+                      <span className="font-bold text-2xl">{w.word}</span>
                       <span className="mx-2 text-muted-foreground">—</span>
                       <span className="text-muted-foreground">{w.meaning}</span>
                     </div>
@@ -274,7 +303,13 @@ export default function DashboardPage() {
                       >
                         {analyzingId === w.id ? "분석 중..." : "AI 분석"}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => startEdit(w)}>수정</Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEdit(w)}
+                      >
+                        수정
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
@@ -289,14 +324,17 @@ export default function DashboardPage() {
                   {(streamingText[w.id] || w.aiAnalysis?.text) && (
                     <div className="border-t pt-3">
                       <div className="prose prose-sm max-w-none text-foreground">
-                        <Markdown remarkPlugins={[remarkGfm]}>{streamingText[w.id] || w.aiAnalysis?.text}</Markdown>
+                        <Markdown remarkPlugins={[remarkGfm]}>
+                          {streamingText[w.id] || w.aiAnalysis?.text}
+                        </Markdown>
                       </div>
                       {analyzingId === w.id && (
                         <span className="inline-block w-1 h-4 bg-foreground animate-pulse ml-0.5" />
                       )}
                       {w.analyzedAt && analyzingId !== w.id && (
                         <p className="text-xs text-muted-foreground mt-2">
-                          분석일: {new Date(w.analyzedAt).toLocaleDateString("ko-KR")}
+                          분석일:{" "}
+                          {new Date(w.analyzedAt).toLocaleDateString("ko-KR")}
                         </p>
                       )}
                     </div>
