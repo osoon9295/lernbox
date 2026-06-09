@@ -92,58 +92,57 @@ export default function ReviewPage() {
   }
 
   const word = queue[current];
-  const progress = `${current + 1} / ${queue.length}`;
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-10 space-y-6">
+    <main className="mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
+      {/* 헤더: 항상 고정 높이 */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">복습</h1>
-        <span className="text-sm text-muted-foreground">{progress}</span>
+        <span className="text-sm text-muted-foreground">{current + 1} / {queue.length}</span>
       </div>
 
-      {/* 단어 카드 */}
-      <Card className="min-h-48">
-        <CardContent className="pt-8 pb-6 text-center space-y-4">
-          <p className="text-3xl font-bold">{word.word}</p>
+      {/* 단어 카드: 고정 높이 + 내부 스크롤 */}
+      <Card className="h-72">
+        <CardContent className="h-full flex flex-col pt-6 pb-4 overflow-hidden">
+          {/* 단어: 항상 상단 고정 */}
+          <p className="text-3xl font-bold text-center shrink-0">{word.word}</p>
 
-          {!revealed ? (
-            <Button onClick={() => setRevealed(true)} className="mt-4">
-              답 보기
-            </Button>
-          ) : (
-            <div className="space-y-4 text-left">
-              <p className="text-center text-lg text-muted-foreground">{word.meaning}</p>
-
-              {word.aiAnalysis?.text && (
-                <div className="border-t pt-4 max-h-60 overflow-y-auto">
-                  <div className="prose prose-sm max-w-none text-foreground">
+          {/* 내용 영역: 답 공개 전후 공간 동일하게 유지 */}
+          <div className="flex-1 overflow-y-auto mt-4">
+            {!revealed ? (
+              <div className="h-full flex items-center justify-center">
+                <Button onClick={() => setRevealed(true)}>답 보기</Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-center text-lg text-muted-foreground">{word.meaning}</p>
+                {word.aiAnalysis?.text && (
+                  <div className="border-t pt-3 prose prose-sm max-w-none text-foreground">
                     <Markdown remarkPlugins={[remarkGfm]}>{word.aiAnalysis.text}</Markdown>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* 난이도 평가 버튼 — 답을 본 후에만 표시 */}
-      {revealed && (
-        <div className="grid grid-cols-4 gap-2">
-          {GRADE_BUTTONS.map(({ label, grade, description }) => (
-            <button
-              key={grade}
-              onClick={() => handleGrade(grade)}
-              disabled={submitting}
-              className="flex flex-col items-center gap-1 rounded-lg border p-3 text-sm hover:bg-accent transition-colors disabled:opacity-50"
-            >
-              <span className="font-medium">{label}</span>
-              <span className="text-xs text-muted-foreground">{description}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {/* 난이도 버튼: 항상 동일 높이 — invisible로 공간 유지 */}
+      <div className={`grid grid-cols-4 gap-2 ${revealed ? "" : "invisible"}`}>
+        {GRADE_BUTTONS.map(({ label, grade, description }) => (
+          <button
+            key={grade}
+            onClick={() => handleGrade(grade)}
+            disabled={submitting || !revealed}
+            className="flex flex-col items-center gap-1 rounded-lg border p-3 text-sm hover:bg-accent transition-colors disabled:opacity-50"
+          >
+            <span className="font-medium">{label}</span>
+            <span className="text-xs text-muted-foreground">{description}</span>
+          </button>
+        ))}
+      </div>
 
-      {/* 진행 바 */}
+      {/* 진행 바: 항상 고정 */}
       <div className="w-full bg-muted rounded-full h-1.5">
         <div
           className="bg-primary h-1.5 rounded-full transition-all"
