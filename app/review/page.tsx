@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import Markdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import Link from "next/link";
 
 interface ReviewWord {
   id: string;
@@ -114,9 +115,9 @@ export default function ReviewPage() {
 
               {word.aiAnalysis?.text && (
                 <div className="border-t pt-4 max-h-60 overflow-y-auto">
-                  <pre className="text-xs whitespace-pre-wrap font-sans text-foreground leading-relaxed">
-                    {word.aiAnalysis.text}
-                  </pre>
+                  <div className="prose prose-sm max-w-none text-foreground">
+                    <Markdown>{word.aiAnalysis.text}</Markdown>
+                  </div>
                 </div>
               )}
             </div>

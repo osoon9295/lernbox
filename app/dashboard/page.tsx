@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type SyntheticEvent } from "react";
 import Link from "next/link";
+import Markdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -220,9 +221,9 @@ export default function DashboardPage() {
                 {/* AI 분석 결과 — 스트리밍 중이거나 저장된 결과 표시 */}
                 {(streamingText[w.id] || w.aiAnalysis?.text) && (
                   <div className="border-t pt-3">
-                    <pre className="text-sm whitespace-pre-wrap font-sans text-foreground leading-relaxed">
-                      {streamingText[w.id] || w.aiAnalysis?.text}
-                    </pre>
+                    <div className="prose prose-sm max-w-none text-foreground">
+                      <Markdown>{streamingText[w.id] || w.aiAnalysis?.text}</Markdown>
+                    </div>
                     {analyzingId === w.id && (
                       <span className="inline-block w-1 h-4 bg-foreground animate-pulse ml-0.5" />
                     )}
