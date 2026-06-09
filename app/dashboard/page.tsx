@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [streamingText, setStreamingText] = useState<Record<string, string>>({});
 
   const [stats, setStats] = useState<Stats | null>(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchWords();
@@ -212,73 +213,99 @@ export default function DashboardPage() {
 
       {/* 단어 목록 */}
       <div className="space-y-4">
-        {words.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            아직 추가한 단어가 없습니다.
-          </p>
+        {/* 검색 */}
+        {words.length > 0 && (
+          <Input
+            placeholder="단어 또는 뜻 검색..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         )}
-        {words.map((w) =>
-          editingId === w.id ? (
-            // 인라인 수정 폼
-            <Card key={w.id}>
-              <CardContent className="flex gap-2 pt-4">
-                <Input value={editWord} onChange={(e) => setEditWord(e.target.value)} />
-                <Input value={editMeaning} onChange={(e) => setEditMeaning(e.target.value)} />
-                <Button size="sm" onClick={() => handleEdit(w.id)}>저장</Button>
-                <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>취소</Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card key={w.id}>
-              <CardContent className="pt-4 space-y-3">
-                {/* 단어 헤더 */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-medium">{w.word}</span>
-                    <span className="mx-2 text-muted-foreground">—</span>
-                    <span className="text-muted-foreground">{w.meaning}</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleAnalyze(w.id)}
-                      disabled={analyzingId === w.id}
-                    >
-                      {analyzingId === w.id ? "분석 중..." : "AI 분석"}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => startEdit(w)}>수정</Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(w.id)}
-                    >
-                      삭제
-                    </Button>
-                  </div>
-                </div>
 
-                {/* AI 분석 결과 — 스트리밍 중이거나 저장된 결과 표시 */}
-                {(streamingText[w.id] || w.aiAnalysis?.text) && (
-                  <div className="border-t pt-3">
-                    <div className="prose prose-sm max-w-none text-foreground">
-                      <Markdown remarkPlugins={[remarkGfm]}>{streamingText[w.id] || w.aiAnalysis?.text}</Markdown>
+        {(() => {
+          const query = search.trim().toLowerCase();
+          const filtered = query
+            ? words.filter(
+                (w) =>
+                  w.word.toLowerCase().includes(query) ||
+                  w.meaning.toLowerCase().includes(query),
+              )
+            : words;
+
+          if (words.length === 0)
+            return (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                아직 추가한 단어가 없습니다.
+              </p>
+            );
+
+          if (filtered.length === 0)
+            return (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                "{search}"에 해당하는 단어가 없습니다.
+              </p>
+            );
+
+          return filtered.map((w) =>
+            editingId === w.id ? (
+              <Card key={w.id}>
+                <CardContent className="flex gap-2 pt-4">
+                  <Input value={editWord} onChange={(e) => setEditWord(e.target.value)} />
+                  <Input value={editMeaning} onChange={(e) => setEditMeaning(e.target.value)} />
+                  <Button size="sm" onClick={() => handleEdit(w.id)}>저장</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>취소</Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card key={w.id}>
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-medium">{w.word}</span>
+                      <span className="mx-2 text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">{w.meaning}</span>
                     </div>
-                    {analyzingId === w.id && (
-                      <span className="inline-block w-1 h-4 bg-foreground animate-pulse ml-0.5" />
-                    )}
-                    {w.analyzedAt && analyzingId !== w.id && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        분석일: {new Date(w.analyzedAt).toLocaleDateString("ko-KR")}
-                      </p>
-                    )}
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAnalyze(w.id)}
+                        disabled={analyzingId === w.id}
+                      >
+                        {analyzingId === w.id ? "분석 중..." : "AI 분석"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => startEdit(w)}>수정</Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(w.id)}
+                      >
+                        삭제
+                      </Button>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ),
-        )}
+
+                  {(streamingText[w.id] || w.aiAnalysis?.text) && (
+                    <div className="border-t pt-3">
+                      <div className="prose prose-sm max-w-none text-foreground">
+                        <Markdown remarkPlugins={[remarkGfm]}>{streamingText[w.id] || w.aiAnalysis?.text}</Markdown>
+                      </div>
+                      {analyzingId === w.id && (
+                        <span className="inline-block w-1 h-4 bg-foreground animate-pulse ml-0.5" />
+                      )}
+                      {w.analyzedAt && analyzingId !== w.id && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          분석일: {new Date(w.analyzedAt).toLocaleDateString("ko-KR")}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ),
+          );
+        })()}
       </div>
     </main>
   );
