@@ -58,7 +58,7 @@ export default function LoginPage() {
           <CardDescription>Lernbox에 오신 걸 환영합니다.</CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">이메일</Label>
@@ -87,7 +87,7 @@ export default function LoginPage() {
             {error && <p className="text-sm text-destructive">{error}</p>}
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-3 pt-2">
+          <CardFooter className="flex flex-col gap-3 pt-4">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "로그인 중..." : "로그인"}
             </Button>

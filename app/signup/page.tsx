@@ -82,7 +82,7 @@ export default function SignupPage() {
           <CardDescription>Lernbox 계정을 만드세요.</CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">이메일</Label>
@@ -148,7 +148,7 @@ export default function SignupPage() {
             )}
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-3 pt-2">
+          <CardFooter className="flex flex-col gap-3 pt-4">
             <Button
               type="submit"
               className="w-full"
