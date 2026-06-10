@@ -78,7 +78,7 @@ export async function POST(
 function buildPrompt(word: string, meaning: string): string {
   return `독일어 단어 "${word}" (뜻: ${meaning})를 B1~B2 수준 학습자를 위해 분석해주세요.
 
-다음 형식으로 한국어로 작성해주세요:
+제목이나 머릿말 없이 아래 섹션부터 바로 시작하세요. 다음 형식으로 한국어로 작성해주세요:
 
 ## 📖 뜻 & 정의
 한국어 뜻과 독일어 정의를 간결하게 설명해주세요.
