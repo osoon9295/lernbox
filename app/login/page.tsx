@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function LoginPage() {
+// useSearchParams()는 Suspense 경계 안에서만 써야 한다 (Next.js 16 정적 렌더링 제약)
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionExpired = searchParams.get("reason") === "session_expired";
@@ -39,7 +40,6 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        // 로그인은 "이메일/비번 틀림"을 구분하지 않는 단일 메시지 (User Enumeration 방어)
         setError(data.error ?? "로그인에 실패했습니다.");
         return;
       }
@@ -53,62 +53,70 @@ export default function LoginPage() {
   }
 
   return (
+    <Card className="w-full max-w-sm">
+      <CardHeader>
+        <CardTitle className="text-2xl">로그인</CardTitle>
+        <CardDescription>
+          {sessionExpired
+            ? "세션이 만료되었습니다. 다시 로그인해 주세요."
+            : "Lernbox에 오신 걸 환영합니다."}
+        </CardDescription>
+      </CardHeader>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">이메일</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">비밀번호</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="비밀번호 입력"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </CardContent>
+
+        <CardFooter className="flex flex-col gap-3 pt-4">
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "로그인 중..." : "로그인"}
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            계정이 없으신가요?{" "}
+            <Link
+              href="/signup"
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              회원가입
+            </Link>
+          </p>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <main className="flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">로그인</CardTitle>
-          <CardDescription>
-            {sessionExpired
-              ? "세션이 만료되었습니다. 다시 로그인해 주세요."
-              : "Lernbox에 오신 걸 환영합니다."}
-          </CardDescription>
-        </CardHeader>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">이메일</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="비밀번호 입력"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </CardContent>
-
-          <CardFooter className="flex flex-col gap-3 pt-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "로그인 중..." : "로그인"}
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              계정이 없으신가요?{" "}
-              <Link
-                href="/signup"
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                회원가입
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+      <Suspense fallback={<div className="w-full max-w-sm h-64 rounded-lg bg-muted animate-pulse" />}>
+        <LoginForm />
+      </Suspense>
     </main>
   );
 }
