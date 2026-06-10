@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { fetchWithAuth } from "@/app/lib/fetchWithAuth";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,7 +41,7 @@ export default function QuizPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch("/api/words")
+    fetchWithAuth("/api/words")
       .then((r) => r.json())
       .then((data) => {
         const shuffled = [...(data.words ?? [])].sort(() => Math.random() - 0.5);

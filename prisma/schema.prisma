@@ -11,12 +11,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  words     Word[]
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  password              String
+  refreshToken          String?   @unique
+  refreshTokenExpiresAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  words                 Word[]
 }
 
 model Word {

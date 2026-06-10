@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type SyntheticEvent } from "react";
+import { fetchWithAuth } from "@/app/lib/fetchWithAuth";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -61,7 +62,7 @@ export default function DashboardPage() {
   }, []);
 
   async function fetchWords() {
-    const res = await fetch("/api/words");
+    const res = await fetchWithAuth("/api/words");
     if (res.ok) {
       const data = await res.json();
       setWords(data.words);
@@ -69,7 +70,7 @@ export default function DashboardPage() {
   }
 
   async function fetchStats() {
-    const res = await fetch("/api/stats");
+    const res = await fetchWithAuth("/api/stats");
     if (res.ok) {
       const data = await res.json();
       setStats(data);
@@ -81,7 +82,7 @@ export default function DashboardPage() {
     setError(null);
     setAdding(true);
     try {
-      const res = await fetch("/api/words", {
+      const res = await fetchWithAuth("/api/words", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ word: newWord, meaning: newMeaning }),
@@ -107,7 +108,7 @@ export default function DashboardPage() {
   }
 
   async function handleEdit(id: string) {
-    const res = await fetch(`/api/words/${id}`, {
+    const res = await fetchWithAuth(`/api/words/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ word: editWord, meaning: editMeaning }),
@@ -122,7 +123,7 @@ export default function DashboardPage() {
   }
 
   async function handleDelete(id: string) {
-    const res = await fetch(`/api/words/${id}`, { method: "DELETE" });
+    const res = await fetchWithAuth(`/api/words/${id}`, { method: "DELETE" });
     if (res.ok) {
       setWords((prev) => (prev ? prev.filter((w) => w.id !== id) : prev));
       fetchStats();
@@ -134,7 +135,7 @@ export default function DashboardPage() {
     setStreamingText((prev) => ({ ...prev, [id]: "" }));
 
     try {
-      const res = await fetch(`/api/words/${id}/analyze`, { method: "POST" });
+      const res = await fetchWithAuth(`/api/words/${id}/analyze`, { method: "POST" });
       if (!res.ok || !res.body) {
         setStreamingText((prev) => ({
           ...prev,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchWithAuth } from "@/app/lib/fetchWithAuth";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -36,7 +37,7 @@ export default function ReviewPage() {
   const [sessionCount, setSessionCount] = useState(0);
 
   useEffect(() => {
-    fetch("/api/review")
+    fetchWithAuth("/api/review")
       .then((r) => r.json())
       .then((data) => {
         setQueue(data.words ?? []);
@@ -47,7 +48,7 @@ export default function ReviewPage() {
   async function handleGrade(grade: 0 | 3 | 4 | 5) {
     const word = queue[current];
     setSubmitting(true);
-    await fetch(`/api/words/${word.id}/review`, {
+    await fetchWithAuth(`/api/words/${word.id}/review`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ grade }),

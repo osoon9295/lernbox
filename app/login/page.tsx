@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get("reason") === "session_expired";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +57,11 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">로그인</CardTitle>
-          <CardDescription>Lernbox에 오신 걸 환영합니다.</CardDescription>
+          <CardDescription>
+            {sessionExpired
+              ? "세션이 만료되었습니다. 다시 로그인해 주세요."
+              : "Lernbox에 오신 걸 환영합니다."}
+          </CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">

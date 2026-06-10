@@ -45,7 +45,16 @@ export async function POST(request: NextRequest) {
       signToken({ userId: user.id }, "refresh"),
     ]);
 
-    // 5. 응답에 Cookie 설정 (비밀번호는 제외하고 사용자 정보 반환)
+    // 5. 리프레시 토큰 DB 저장 — 로그아웃/재사용 감지 시 무효화하기 위해
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        refreshToken,
+        refreshTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    // 6. 응답에 Cookie 설정 (비밀번호는 제외하고 사용자 정보 반환)
     const response = NextResponse.json(
       {
         user: {
