@@ -1,7 +1,7 @@
 # 📦 Lernbox 프로젝트 기획서
  
 > 개인 프로젝트 — 독일어 단어장 + AI 예문 생성 + 간격 반복 복습
-> 최종 업데이트: 2026.06.09 (Day 11 완료 — 전체 완성)
+> 최종 업데이트: 2026.06.11 (Post-launch 개선 완료)
  
 ---
  
@@ -192,12 +192,55 @@
 - 배포 후 E2E 검증 (프로덕션 환경)
   - 회원가입 → 로그인 → 단어 추가 → 복습 제출(grade=4 → interval=1, dueAt=내일) → 복습 목록 비워짐 → 로그아웃 전부 ✅
 
-### ✅ Day 11 (6/9 월) — README 작성 + 프로젝트 완성
+### ✅ Day 11 (6/9 월) — 기능 확장 + README 작성
+- **랜딩 페이지** (`/`) — 기능 소개 카드 3개(AI 분석/간격 반복/내 단어장) + 시작하기/로그인 버튼
+- **마크다운 렌더링** — `react-markdown` + `remark-gfm` 적용
+  - AI 분석 결과를 마크다운으로 렌더링 (`prose` 타이포그래피)
+  - GFM 테이블 지원 (단어 비교표 등)
+- **인증 상태별 루트 리다이렉트** — 로그인 사용자의 `/` 접근 → `/dashboard` 자동 이동
+- **학습 통계** (`GET /api/stats`) — 전체 단어 / 오늘 복습 / 학습 시작률 / 연속 학습일 4개 카드
+  - streak 계산: 오늘·어제부터 연속된 날 역추적 (별도 로그 테이블 없이 `lastReviewedAt` 활용)
+- **단어 검색** — 클라이언트 사이드 실시간 필터 (단어·뜻 모두 검색)
+- **빈칸 퀴즈** (`/quiz`) — AI 예문에서 단어를 `____`로 대체해 빈칸 채우기
+  - AI 분석 없는 단어는 뜻 → 단어 방식으로 폴백
+  - 셔플된 순서, 점수 집계, 완료 화면
+- **UI 레이아웃 안정화** — 복습·퀴즈 페이지
+  - 카드 고정 높이 (`h-72`, `h-52`), `invisible` 클래스로 버튼 공간 유지
 - README.md 전면 재작성
   - 프로젝트 배경 및 소개, 주요 기능 표, 기술 스택 표
   - 아키텍처 & 설계 결정 섹션: jose vs jsonwebtoken, Prisma 7 driver adapter, AI 스트리밍 구조, IDOR 방어, SM-2 알고리즘 코드
   - 테스트 전략 표, 로컬 실행 방법, CI/CD 설명
-- **프로젝트 완성** — 전체 11일 일정 마무리
+
+### ✅ Post-launch (6/9 ~ 6/11) — UI 개선 + 보안 강화
+
+**UX / UI**
+- **로그아웃 버튼** — 대시보드 헤더에 ghost 스타일로 배치
+- **대시보드 스켈레톤 로딩** — stats/단어 카드 모두 skeleton 표시 (레이아웃 점프 제거)
+  - `words` 초기값을 `null`로 변경해 "로딩 중 / 비어있음 / 있음" 3상태 명확히 구분
+  - 스켈레톤 너비를 프랙션(`w-1/3`, `w-3/4`)으로 반응형 적용
+- **퀴즈·복습 스켈레톤** — 로딩 텍스트 대신 실제 UI와 동일한 구조의 skeleton으로 교체
+- **로그인·회원가입 폼 간격 조정** — `flex flex-col gap-5`, `pt-4`
+
+**AI**
+- **AI 모델 변경** — `claude-opus-4-8` → `claude-haiku-4-5` (약 5배 비용 절감)
+- **AI 분석 타이틀 제거** — 프롬프트에 "제목 없이 섹션부터 바로 시작" 지시 추가
+
+**메타데이터 & 브랜딩**
+- **사이트 메타데이터 업데이트** — title template (`%s | Lernbox`), description, keywords, `lang="ko"`
+- **SVG 파비콘** (`app/icon.svg`) — 다크 배경 + 금색 L 형태 (독일 국기 금색 `#EAB308`)
+
+**보안 — Refresh Token Rotation**
+- **DB 스키마** — `User`에 `refreshToken`, `refreshTokenExpiresAt` 필드 추가
+- **로그인 시 리프레시 토큰 DB 저장** — 이후 무효화(로그아웃·재사용 감지) 가능
+- **`POST /api/auth/refresh`** — 신규 엔드포인트
+  - JWT 서명 검증 → DB 토큰 일치 확인 → 새 토큰 쌍 발급 (Rotation)
+  - 구 토큰이 재사용되면 탈취 감지 → 해당 계정 전체 세션 즉시 무효화
+- **로그아웃 시 DB 토큰 삭제** — 쿠키 삭제 + DB 무효화로 완전한 세션 종료
+- **`fetchWithAuth` 클라이언트 유틸** — 401 감지 → `/api/auth/refresh` 자동 호출 → 원래 요청 재시도
+  - 동시 다발 401 처리: `pendingRefresh` Promise 공유로 refresh 1회만 실행
+  - 리프레시 실패 → `/login?reason=session_expired` 리다이렉트
+- **로그인 페이지 세션 만료 안내** — `?reason=session_expired` 파라미터로 안내 문구 전환
+  - `useSearchParams()` → Next.js 16 요구사항에 맞춰 `<Suspense>`로 감쌈
  
 ---
  
@@ -250,6 +293,12 @@
 - React 19: `FormEvent` deprecated ("doesn't actually exist") → `SyntheticEvent` 사용
 - shadcn-ui: Tailwind v4 환경에서 `@import "tailwindcss"` 방식 자동 감지하여 설치
 - 클라이언트 검증 규칙을 서버 Zod 스키마와 동일하게 유지 → 불필요한 API 왕복 방지
+
+### Refresh Token Rotation
+- Access 토큰 만료 시 클라이언트가 자동으로 `/api/auth/refresh` 호출 → 재시도 (사용자 개입 없음)
+- 매 갱신마다 리프레시 토큰 교체 + DB 업데이트 → 구 토큰 재사용 = 탈취 감지 → 전체 세션 무효화
+- `pendingRefresh` Promise 공유: 동시에 여러 요청이 401 받아도 refresh는 한 번만 실행
+- Next.js 16: `useSearchParams()`는 반드시 `<Suspense>` 안에서 사용해야 빌드 통과
 
 ### Git 협업
 - Conventional Commits 적용

@@ -24,9 +24,13 @@
 |---|---|
 | 회원가입 / 로그인 | bcrypt 해싱 + JWT(Access 15분 / Refresh 7일) + HttpOnly Cookie |
 | 단어 CRUD | 추가·인라인 수정·삭제, 다른 사용자 단어 접근 차단(IDOR 방어) |
-| AI 분석 | Claude Opus 4.8 스트리밍 — 토큰 생성 즉시 화면에 표시, 완료 후 DB 저장 |
+| AI 분석 | Claude Haiku 4.5 스트리밍 — 토큰 생성 즉시 화면에 표시, 완료 후 DB 저장 |
 | 복습 시스템 | SM-2 알고리즘 기반 SRS — 오늘 복습할 단어만 카드로 노출 |
+| 빈칸 퀴즈 | AI 예문의 단어를 `____`로 대체, 직접 입력해서 맞히는 퀴즈 |
+| 학습 통계 | 전체 단어 수 / 오늘 복습 수 / 학습 시작률 / 연속 학습일 |
+| 단어 검색 | 단어·뜻 동시 검색, 실시간 필터링 |
 | 인증 미들웨어 | Edge Runtime에서 JWT 검증, 미인증 접근 시 /login 리다이렉트 |
+| 세션 자동 갱신 | Refresh Token Rotation — 만료 시 자동 재발급, 재사용 감지 시 세션 무효화 |
 
 ---
 
@@ -47,6 +51,22 @@
 ---
 
 ## 아키텍처 & 설계 결정
+
+### Refresh Token Rotation
+
+액세스 토큰(15분)이 만료되면 `fetchWithAuth`가 자동으로 `POST /api/auth/refresh`를 호출합니다.
+
+```
+API 요청 → 401
+  → POST /api/auth/refresh
+    → JWT 서명 검증 + DB 토큰 일치 확인
+    → 새 액세스 토큰 + 새 리프레시 토큰 발급 (Rotation)
+    → DB 업데이트 (구 토큰 교체)
+    → 원래 요청 자동 재시도 → 사용자는 아무것도 모름
+  → 리프레시 실패 → /login?reason=session_expired 리다이렉트
+```
+
+매 갱신마다 리프레시 토큰을 교체하므로, 구 토큰이 재사용되면 탈취로 간주해 해당 계정의 모든 세션을 즉시 무효화합니다.
 
 ### 인증: jose vs jsonwebtoken
 
