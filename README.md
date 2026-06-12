@@ -27,8 +27,8 @@
 | AI 분석 | Claude Haiku 4.5 스트리밍 — 토큰 생성 즉시 화면에 표시, 완료 후 DB 저장 |
 | 복습 시스템 | SM-2 알고리즘 기반 SRS — 오늘 복습할 단어만 카드로 노출 |
 | 빈칸 퀴즈 | AI 예문의 단어를 `____`로 대체, 직접 입력해서 맞히는 퀴즈 |
-| 학습 통계 | 전체 단어 수 / 오늘 복습 수 / 학습 시작률 / 연속 학습일 |
-| 단어 검색 | 단어·뜻 동시 검색, 실시간 필터링 |
+| 대시보드 | 학습 현황 전용 — 스탯 카드 4종 / 주간 복습 바 차트 / 복습 대기 CTA |
+| 단어장 | 단어 추가·수정·삭제·AI 분석, 단어·뜻 실시간 검색 필터링 |
 | 인증 미들웨어 | Edge Runtime에서 JWT 검증, 미인증 접근 시 /login 리다이렉트 |
 | 세션 자동 갱신 | Refresh Token Rotation — 만료 시 자동 재발급, 재사용 감지 시 세션 무효화 |
 
@@ -44,7 +44,7 @@
 | 인증 | bcrypt 6 + jose 6 (JWT) + HttpOnly Cookie |
 | AI | Anthropic Claude API (`@anthropic-ai/sdk`) |
 | 검증 | Zod 4 |
-| UI | Tailwind CSS 4 + shadcn-ui |
+| UI | Tailwind CSS 4 + shadcn-ui + Recharts |
 | 테스트 | Jest 30 + React Testing Library |
 | CI/CD | GitHub Actions + Vercel |
 

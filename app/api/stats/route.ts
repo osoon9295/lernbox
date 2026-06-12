@@ -23,11 +23,42 @@ export async function GET(request: NextRequest) {
   const startRate = total > 0 ? Math.round((started / total) * 100) : 0;
   const streak = calcStreak(words.map((w) => w.lastReviewedAt));
 
-  return NextResponse.json({ total, reviewedToday, startRate, streak });
+  // 복습 대기 단어 수 (dueAt이 null이거나 현재 이전)
+  const dueCount = words.filter(
+    (w) => w.dueAt === null || w.dueAt <= now,
+  ).length;
+
+  // 최근 7일 날짜별 복습 단어 수 (lastReviewedAt 기준)
+  const weeklyReviews = calcWeeklyReviews(words.map((w) => w.lastReviewedAt), now);
+
+  return NextResponse.json({ total, reviewedToday, startRate, streak, dueCount, weeklyReviews });
 }
 
 function toDateStr(date: Date): string {
   return date.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+// 오늘 포함 7일간 날짜 배열을 만들고, 각 날에 lastReviewedAt이 해당하는 단어 수를 집계
+function calcWeeklyReviews(
+  dates: (Date | null)[],
+  now: Date,
+): { date: string; count: number }[] {
+  const counts: Record<string, number> = {};
+
+  // 7일치 날짜 키를 0으로 초기화 (데이터 없는 날도 표시)
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    counts[toDateStr(d)] = 0;
+  }
+
+  for (const d of dates) {
+    if (!d) continue;
+    const key = toDateStr(d);
+    if (key in counts) counts[key]++;
+  }
+
+  return Object.entries(counts).map(([date, count]) => ({ date, count }));
 }
 
 // lastReviewedAt 날짜 목록에서 오늘 기준 연속 학습일 계산
