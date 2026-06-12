@@ -44,17 +44,15 @@ function formatDateLabel(dateStr: string): string {
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
 
-  async function fetchStats() {
-    const res = await fetchWithAuth("/api/stats");
-    if (res.ok) {
-      const data = await res.json();
-      setStats(data);
-    }
-  }
-
   useEffect(() => {
+    async function fetchStats() {
+      const res = await fetchWithAuth("/api/stats");
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    }
     fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleLogout() {

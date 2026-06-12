@@ -35,16 +35,15 @@ export default function WordsPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    async function fetchWords() {
+      const res = await fetchWithAuth("/api/words");
+      if (res.ok) {
+        const data = await res.json();
+        setWords(data.words);
+      }
+    }
     fetchWords();
   }, []);
-
-  async function fetchWords() {
-    const res = await fetchWithAuth("/api/words");
-    if (res.ok) {
-      const data = await res.json();
-      setWords(data.words);
-    }
-  }
 
   async function handleAdd(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
