@@ -9,6 +9,12 @@ jest.mock("@/app/lib/prisma", () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    dailyReviewCount: {
+      upsert: jest.fn(),
+    },
+    // 라우트는 [word.update, dailyReviewCount.upsert]를 트랜잭션으로 묶는다.
+    // 모킹된 연산들은 이미 resolved 값이므로 Promise.all로 그대로 풀어준다.
+    $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 
@@ -62,6 +68,13 @@ beforeEach(() => {
     dueAt: new Date(),
     lastReviewedAt: new Date(),
   });
+  // 기본: 일일 복습 카운터 증가 성공
+  (mockPrisma.dailyReviewCount.upsert as jest.Mock).mockResolvedValue({
+    id: "drc-1",
+    userId: "user-1",
+    date: new Date(),
+    count: 1,
+  });
 });
 
 describe("POST /api/words/[id]/review", () => {
@@ -75,6 +88,24 @@ describe("POST /api/words/[id]/review", () => {
     expect(body.word).toHaveProperty("repetitions");
     expect(body.word).toHaveProperty("dueAt");
     expect(mockPrisma.word.update).toHaveBeenCalledTimes(1);
+  });
+
+  test("정상 복습 → 일일 복습 카운터를 UTC 자정 키로 +1 증가", async () => {
+    const req = makeRequest({ grade: 4 });
+    await POST(req, { params: Promise.resolve({ id: "word-1" }) });
+
+    expect(mockPrisma.dailyReviewCount.upsert).toHaveBeenCalledTimes(1);
+    const upsertArg = (mockPrisma.dailyReviewCount.upsert as jest.Mock).mock
+      .calls[0][0];
+    // 증가는 DB 레벨 원자적 increment여야 한다
+    expect(upsertArg.update).toEqual({ count: { increment: 1 } });
+    expect(upsertArg.create).toMatchObject({ userId: "user-1", count: 1 });
+    // 날짜 키는 UTC 자정(시:분:초 = 0)으로 정규화되어야 한다
+    const dateKey: Date = upsertArg.where.userId_date.date;
+    expect(dateKey.getUTCHours()).toBe(0);
+    expect(dateKey.getUTCMinutes()).toBe(0);
+    expect(dateKey.getUTCSeconds()).toBe(0);
+    expect(dateKey.getUTCMilliseconds()).toBe(0);
   });
 
   test("grade=5(쉬움) → update 호출 시 repetitions=1, interval=1 전달", async () => {

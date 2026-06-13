@@ -11,14 +11,15 @@ datasource db {
 }
 
 model User {
-  id                    String    @id @default(uuid())
-  email                 String    @unique
+  id                    String             @id @default(uuid())
+  email                 String             @unique
   password              String
-  refreshToken          String?   @unique
+  refreshToken          String?            @unique
   refreshTokenExpiresAt DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
   words                 Word[]
+  dailyReviewCounts     DailyReviewCount[]
 }
 
 model Word {
@@ -36,4 +37,17 @@ model Word {
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+// 날짜별 복습 횟수 집계. 복습 이벤트를 낱개로 저장하지 않고
+// (user, 날짜)당 row 하나에 카운터만 누적해 저장량을 "날짜 수"로 묶는다.
+// date는 UTC 자정으로 정규화되어 하루 = row 1개를 보장한다.
+model DailyReviewCount {
+  id     String   @id @default(uuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   DateTime
+  count  Int      @default(0)
+
+  @@unique([userId, date])
 }

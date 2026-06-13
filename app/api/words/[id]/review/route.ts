@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/app/lib/prisma";
 import { getAuthenticatedUserId } from "@/app/lib/auth/session";
 import { calculateNextReview, type Grade } from "@/app/lib/srs";
+import { utcDayStart } from "@/app/lib/date";
 
 const reviewSchema = z.object({
   grade: z.union([z.literal(0), z.literal(3), z.literal(4), z.literal(5)]),
@@ -34,18 +35,29 @@ export async function POST(
     parsed.data.grade as Grade,
   );
 
-  const updated = await prisma.word.update({
-    where: { id },
-    data: next,
-    select: {
-      id: true,
-      easeFactor: true,
-      interval: true,
-      repetitions: true,
-      dueAt: true,
-      lastReviewedAt: true,
-    },
-  });
+  // 단어의 SRS 상태 갱신과 "오늘 복습 카운터 +1"을 한 트랜잭션으로 묶는다.
+  // 둘은 하나의 복습 이벤트이므로 부분 적용(한쪽만 반영)을 막는다.
+  const dayKey = utcDayStart(next.lastReviewedAt);
+
+  const [updated] = await prisma.$transaction([
+    prisma.word.update({
+      where: { id },
+      data: next,
+      select: {
+        id: true,
+        easeFactor: true,
+        interval: true,
+        repetitions: true,
+        dueAt: true,
+        lastReviewedAt: true,
+      },
+    }),
+    prisma.dailyReviewCount.upsert({
+      where: { userId_date: { userId: auth.userId, date: dayKey } },
+      create: { userId: auth.userId, date: dayKey, count: 1 },
+      update: { count: { increment: 1 } }, // DB 레벨 원자적 증가
+    }),
+  ]);
 
   return NextResponse.json({ word: updated });
 }

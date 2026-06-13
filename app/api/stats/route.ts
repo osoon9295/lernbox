@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { getAuthenticatedUserId } from "@/app/lib/auth/session";
+import { utcDayStart } from "@/app/lib/date";
 
 // GET /api/stats — 학습 통계 반환
 export async function GET(request: NextRequest) {
@@ -13,12 +14,8 @@ export async function GET(request: NextRequest) {
   });
 
   const now = new Date();
-  const todayStr = toDateStr(now);
 
   const total = words.length;
-  const reviewedToday = words.filter(
-    (w) => w.lastReviewedAt && toDateStr(w.lastReviewedAt) === todayStr,
-  ).length;
   const started = words.filter((w) => w.repetitions > 0).length;
   const startRate = total > 0 ? Math.round((started / total) * 100) : 0;
   const streak = calcStreak(words.map((w) => w.lastReviewedAt));
@@ -28,37 +25,34 @@ export async function GET(request: NextRequest) {
     (w) => w.dueAt === null || w.dueAt <= now,
   ).length;
 
-  // 최근 7일 날짜별 복습 단어 수 (lastReviewedAt 기준)
-  const weeklyReviews = calcWeeklyReviews(words.map((w) => w.lastReviewedAt), now);
+  // 최근 7일 복습 횟수 — DailyReviewCount에서 정확한 날짜별 카운트를 읽는다.
+  // (lastReviewedAt은 단어당 마지막 1건만 남아 같은 단어를 재복습하면 과거 카운트가 줄어드는 문제가 있었음)
+  const todayKey = utcDayStart(now);
+  const weekStart = new Date(todayKey);
+  weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+
+  const dailyRows = await prisma.dailyReviewCount.findMany({
+    where: { userId: auth.userId, date: { gte: weekStart } },
+    select: { date: true, count: true },
+  });
+  const countByDay = new Map(dailyRows.map((r) => [toDateStr(r.date), r.count]));
+
+  const weeklyReviews: { date: string; count: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(todayKey);
+    d.setUTCDate(d.getUTCDate() - i);
+    const key = toDateStr(d);
+    weeklyReviews.push({ date: key, count: countByDay.get(key) ?? 0 });
+  }
+
+  // "오늘 복습" 카드도 차트의 오늘 막대와 동일한 출처를 쓰도록 통일
+  const reviewedToday = countByDay.get(toDateStr(todayKey)) ?? 0;
 
   return NextResponse.json({ total, reviewedToday, startRate, streak, dueCount, weeklyReviews });
 }
 
 function toDateStr(date: Date): string {
   return date.toISOString().slice(0, 10); // "YYYY-MM-DD"
-}
-
-// 오늘 포함 7일간 날짜 배열을 만들고, 각 날에 lastReviewedAt이 해당하는 단어 수를 집계
-function calcWeeklyReviews(
-  dates: (Date | null)[],
-  now: Date,
-): { date: string; count: number }[] {
-  const counts: Record<string, number> = {};
-
-  // 7일치 날짜 키를 0으로 초기화 (데이터 없는 날도 표시)
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    counts[toDateStr(d)] = 0;
-  }
-
-  for (const d of dates) {
-    if (!d) continue;
-    const key = toDateStr(d);
-    if (key in counts) counts[key]++;
-  }
-
-  return Object.entries(counts).map(([date, count]) => ({ date, count }));
 }
 
 // lastReviewedAt 날짜 목록에서 오늘 기준 연속 학습일 계산
