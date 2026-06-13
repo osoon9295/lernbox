@@ -76,7 +76,7 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
+      <main className="w-full mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
         {/* 헤더 skeleton */}
         <div className="flex items-center justify-between">
           <div className="h-6 w-20 rounded bg-muted animate-pulse" />
@@ -108,7 +108,7 @@ export default function QuizPage() {
 
   if (queue.length === 0) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-20 text-center space-y-4">
+      <main className="w-full mx-auto max-w-xl px-4 py-20 text-center space-y-4">
         <p className="text-4xl">📚</p>
         <h1 className="text-xl font-bold">단어가 없습니다</h1>
         <p className="text-sm text-muted-foreground">먼저 단어를 추가해주세요.</p>
@@ -120,7 +120,7 @@ export default function QuizPage() {
   if (done) {
     const pct = Math.round((score.correct / score.total) * 100);
     return (
-      <main className="mx-auto max-w-xl px-4 py-20 text-center space-y-4">
+      <main className="w-full mx-auto max-w-xl px-4 py-20 text-center space-y-4">
         <p className="text-4xl">{pct >= 80 ? "🎉" : pct >= 50 ? "🙂" : "📖"}</p>
         <h1 className="text-xl font-bold">퀴즈 완료!</h1>
         <p className="text-3xl font-bold">
@@ -145,7 +145,7 @@ export default function QuizPage() {
     : null;
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
+    <main className="w-full mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
       {/* 헤더: 항상 고정 높이 */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">빈칸 퀴즈</h1>

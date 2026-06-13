@@ -67,7 +67,7 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
+      <main className="w-full mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
         {/* 헤더 skeleton */}
         <div className="flex items-center justify-between">
           <div className="h-6 w-16 rounded bg-muted animate-pulse" />
@@ -94,7 +94,7 @@ export default function ReviewPage() {
 
   if (queue.length === 0 || done) {
     return (
-      <main className="mx-auto max-w-xl px-4 py-20 text-center space-y-4">
+      <main className="w-full mx-auto max-w-xl px-4 py-20 text-center space-y-4">
         <p className="text-4xl">🎉</p>
         <h1 className="text-xl font-bold">
           {queue.length === 0 ? "오늘 복습할 단어가 없습니다!" : `복습 완료! (${sessionCount}개)`}
@@ -114,7 +114,7 @@ export default function ReviewPage() {
   const word = queue[current];
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
+    <main className="w-full mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
       {/* 헤더: 항상 고정 높이 */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">복습</h1>
