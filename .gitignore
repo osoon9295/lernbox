@@ -45,3 +45,11 @@ next-env.d.ts
 .claude/settings.local.json
 
 /app/generated/prisma
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
