@@ -31,6 +31,8 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
 
   /* Configure projects for major browsers */
@@ -71,10 +73,14 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  /* Run the dev server before starting the tests.
+   * dev는 NODE_ENV=development라 인증 쿠키가 secure:false로 발급된다 →
+   * http://localhost에서도 WebKit이 쿠키를 저장하므로 로그인 E2E가 통과한다.
+   * 로컬: 이미 떠 있는 dev 서버(3000)를 재사용. CI: 새로 띄움. */
+  webServer: {
+    command: "npm run dev",
+    url: "http://localhost:3000",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
+  },
 });
