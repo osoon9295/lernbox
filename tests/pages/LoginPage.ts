@@ -18,10 +18,13 @@ export class LoginPage {
   }
 
   async login(email: string, password: string) {
-    await this.emailInput.fill(email);
+    // fill 대신 한 글자씩 타이핑 → React onChange가 확실히 발생
+    await this.emailInput.click();
+    await this.emailInput.pressSequentially(email);
     await expect(this.emailInput).toHaveValue(email);
 
-    await this.passwordInput.fill(password);
+    await this.passwordInput.click();
+    await this.passwordInput.pressSequentially(password);
     await expect(this.passwordInput).toHaveValue(password);
 
     await this.loginButton.click();
