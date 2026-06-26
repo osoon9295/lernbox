@@ -9,10 +9,19 @@ const config: Config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
-  // ① Playwright E2E 폴더는 Jest에서 제외
   testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/tests/"],
-  // // ② react-markdown 등 ESM 라이브러리는 변환하도록 예외 처리
-  // transformIgnorePatterns: ["/node_modules/(?!(react-markdown|.*\\.mjs$))"],
 };
 
-export default createJestConfig(config);
+const getConfig = async (): Promise<Config> => {
+  const jestConfig = await createJestConfig(config)();
+  return {
+    ...jestConfig,
+    transformIgnorePatterns: [
+      // react-markdown과 그 ESM 의존성 전부를 변환 허용
+      "node_modules/(?!.*(react-markdown|micromark|mdast|hast|unist|unified|bail|trough|vfile|remark|rehype|property-information|space-separated-tokens|comma-separated-tokens|decode-named-character-reference|character-entities|trim-lines|html-url-attributes|zwitch|longest-streak|ccount|escape-string-regexp|markdown-table|devlop|estree|is-plain-obj)).+\\.js$",
+      "^.+\\.module\\.(css|sass|scss)$",
+    ],
+  };
+};
+
+export default getConfig;
