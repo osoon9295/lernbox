@@ -19,7 +19,11 @@ export class LoginPage {
 
   async login(email: string, password: string) {
     await this.emailInput.fill(email);
+    await expect(this.emailInput).toHaveValue(email);
+
     await this.passwordInput.fill(password);
+    await expect(this.passwordInput).toHaveValue(password);
+
     await this.loginButton.click();
   }
 }
