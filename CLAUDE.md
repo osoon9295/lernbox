@@ -23,11 +23,14 @@ npm test           # Jest + RTL (단위)
 npx playwright test          # E2E — dev 서버(localhost:3000)가 떠 있어야 함
 npx playwright show-report   # 마지막 E2E 결과 HTML 리포트
 npx prisma migrate dev    # 마이그레이션 생성/적용
+npx prisma db seed        # 테스트 계정 시드 (TEST_USER_* env 필요, 반복 실행 안전)
 npx prisma studio         # DB GUI
 ```
 
-> E2E 로그인 테스트는 `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` 환경변수를 사용 (`.env`).
-> CI(`playwright.yml`)에서는 GitHub Secrets로 주입해야 통과함.
+> E2E 로그인 테스트는 `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` 계정으로 로그인 (`.env`).
+> 이 계정은 `prisma/seed.ts`(`npx prisma db seed`)로 DB에 심는다 — upsert라 반복 실행 안전.
+> CI(`playwright.yml`)는 임시 PostgreSQL을 띄우고 → migrate + seed → E2E 실행.
+> 단, GitHub Secrets에 `JWT_ACCESS_SECRET`·`JWT_REFRESH_SECRET`·`TEST_USER_EMAIL`·`TEST_USER_PASSWORD` 등록 필요.
 
 ## Layout
 
@@ -36,6 +39,7 @@ app/api/auth/{signup,login,logout}/route.ts   # 인증 API
 app/lib/auth/{password,jwt,cookies,schemas}.ts # 인증 유틸 (관심사 분리)
 app/lib/{env,prisma}.ts                         # 환경변수 로더 / Prisma 싱글톤
 prisma/schema.prisma                            # DB 스키마
+prisma/seed.ts                                  # 테스트 계정 시드 (E2E·CI용)
 tests/*.spec.ts                                 # Playwright E2E 스펙
 tests/pages/*.ts                                # Page Object (로케이터·동작 캡슐화)
 playwright.config.ts                            # E2E 설정 (chromium/firefox/webkit)
