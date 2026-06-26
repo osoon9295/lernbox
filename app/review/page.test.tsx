@@ -50,11 +50,13 @@ function mockFetchReviewPost() {
 }
 
 describe("ReviewPage", () => {
-  test("초기 로딩 중 '불러오는 중...' 표시", () => {
+  test("초기 로딩 중 스켈레톤(role=status) 표시", () => {
     // fetch가 resolve되지 않도록 대기 상태로 둠
     (global.fetch as jest.Mock).mockReturnValueOnce(new Promise(() => {}));
     render(<ReviewPage />);
-    expect(screen.getByText("불러오는 중...")).toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: "불러오는 중" }),
+    ).toBeInTheDocument();
   });
 
   test("복습 단어 없을 때 빈 상태 메시지 표시", async () => {

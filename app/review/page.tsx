@@ -67,7 +67,11 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <main className="w-full mx-auto max-w-xl px-4 py-10 flex flex-col gap-4">
+      <main
+        role="status"
+        aria-label="불러오는 중"
+        className="w-full mx-auto max-w-xl px-4 py-10 flex flex-col gap-4"
+      >
         {/* 헤더 skeleton */}
         <div className="flex items-center justify-between">
           <div className="h-6 w-16 rounded bg-muted animate-pulse" />
