@@ -1,52 +1,145 @@
 # Lernbox
 
-> 독일어 단어를 추가하면 AI가 맥락 있는 예문·뉘앙스와 함께 풀어주고, SM-2 간격 반복 알고리즘으로 복습 일정을 관리해주는 개인 단어장
+> 독일어 AI 단어장 — Next.js 풀스택 개인 프로젝트
+>
+> **품질 관점 요약:** 단위·통합·컴포넌트·E2E **4단 테스트 피라미드**를 구축하고, GitHub Actions CI에서 **임시 PostgreSQL을 프로비저닝**해 3개 브라우저(Chromium·Firefox·WebKit) E2E를 자동 실행합니다. 크로스 브라우저 환경에서 발견한 버그 2건을 **trace 기반으로 추적·해결**했습니다.
+
+![CI](https://github.com/osoon9295/lernbox/actions/workflows/ci.yml/badge.svg)
+![E2E](https://github.com/osoon9295/lernbox/actions/workflows/playwright.yml/badge.svg)
 
 **배포:** https://lernbox.vercel.app
+**GitHub:** https://github.com/osoon9295/lernbox
+
+---
+
+## 목차
+
+- [품질 보장 전략](#품질-보장-전략) — 테스트 피라미드 / E2E / CI 파이프라인
+- [트러블슈팅](#트러블슈팅) — 크로스 브라우저 버그 추적 사례 2건
+- [프로젝트 소개](#프로젝트-소개)
+- [기술 스택](#기술-스택)
+- [아키텍처 & 설계 결정](#아키텍처--설계-결정)
+- [로컬 실행](#로컬-실행)
+
+---
+
+## 품질 보장 전략
+
+### 테스트 피라미드
+
+각 레이어가 서로 다른 관심사를 검증하도록 4단으로 구성했습니다. 빠르고 많은 단위 테스트가 아래를 받치고, 느리지만 사용자 흐름 전체를 검증하는 E2E가 위를 덮습니다.
+
+| 레이어            | 파일                                      | 방식                               | 케이스 |
+| ----------------- | ----------------------------------------- | ---------------------------------- | ------ |
+| 단위 (알고리즘)   | `app/lib/srs.test.ts`                     | Jest — 순수 함수, 경계값 검증      | 17     |
+| 통합 (API 라우트) | `app/api/words/[id]/review/route.test.ts` | Jest + Prisma/auth 모킹            | 8      |
+| 컴포넌트          | `app/review/page.test.tsx`                | React Testing Library + fetch 모킹 | 9      |
+| E2E               | `tests/login.spec.ts`                     | Playwright (POM) × 3 브라우저      | 9      |
+
+> 단위·통합·컴포넌트 합계 34개 + E2E 9개. CI에서 push/PR마다 전체 자동 실행.
+
+### E2E 자동화 (Playwright)
+
+- **Page Object Model**로 셀렉터와 동작을 `LoginPage` 클래스에 캡슐화 — UI 변경 시 한 곳만 수정하면 모든 테스트에 반영됩니다.
+- 로그인 핵심 흐름을 검증: 성공 / 잘못된 비밀번호 / 빈 값 / **User Enumeration 방어**(실패 메시지 통일 확인).
+- **auto-waiting** 기반 — 고정 대기(`sleep`) 없이 조건 충족까지 재시도해 플래키 테스트를 방지합니다.
+- Chromium·Firefox·**WebKit** 3개 브라우저에서 교차 검증.
+
+### 테스트 설계 원칙
+
+- **예상 결과는 구현이 아닌 명세 기준**으로 작성 — 구현이 바뀌면 테스트가 잡아내야 하므로.
+- **클라이언트 검증(UX)과 서버 검증(보안)을 레이어로 구분** — 빈 값은 클라이언트 `required`로, 인증 거부는 서버 응답으로 검증.
+- API 라우트 테스트는 Prisma·auth를 **모킹**해 DB 없는 CI 환경에서도 라우트 로직만 격리 검증.
+
+### CI 파이프라인 (GitHub Actions)
+
+테스트 성격에 따라 워크플로우를 **2개로 분리**했습니다.
+
+| 워크플로우       | 역할                                                | 트리거           |
+| ---------------- | --------------------------------------------------- | ---------------- |
+| `ci.yml`         | 타입 체크(`tsc --noEmit`) + Jest 단위·통합·컴포넌트 | push / PR (main) |
+| `playwright.yml` | E2E (임시 DB 포함)                                  | push / PR (main) |
+
+**CI에서의 테스트 DB 전략** — 운영 DB 오염을 막기 위해 CI 안에서 DB를 격리했습니다.
+
+```
+1. services: postgres   → CI 안에 임시 PostgreSQL 프로비저닝 (매 실행 새 인스턴스)
+2. prisma migrate deploy → schema.prisma 기준으로 테이블 생성
+3. prisma db seed        → 테스트 계정 주입
+4. playwright test       → 시드된 계정으로 로그인 E2E 실행
+```
+
+- 운영 Supabase와 **완전 격리** — 테스트가 실제 사용자 데이터를 건드릴 수 없습니다.
+- 매 실행 깨끗한 상태에서 시작 → 테스트 간 오염 없음.
+- 민감 값(JWT 시크릿·테스트 계정)은 **GitHub Secrets**로 관리, 운영 키와 분리.
+
+---
+
+## 트러블슈팅
+
+크로스 브라우저 E2E를 운영하며 **WebKit에서만 재현되는 버그 2건**을 마주쳤고, 각각 다른 층위의 원인을 추적해 해결했습니다.
+
+### 1. WebKit 전용 로그인 실패 — Secure 쿠키와 실행 환경
+
+| 항목     | 내용                                                                                                                                                                                                                                                                                                                         |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **문제** | 3개 브라우저 중 WebKit에서만 로그인 후 `/dashboard` 진입에 실패하고 `/login`에 잔류                                                                                                                                                                                                                                          |
+| **원인** | E2E를 프로덕션 빌드(`npm run build && start`)로 실행 → `NODE_ENV=production` → 인증 쿠키에 `Secure` 속성 부착. `Secure` 쿠키는 HTTPS에서만 저장되는데 테스트는 `http://localhost`에서 실행됨. Chromium·Firefox는 localhost를 secure context 예외로 처리하지만 **WebKit은 예외 없이 거부** → 토큰 미저장 → 미들웨어 인증 실패 |
+| **해결** | E2E 실행을 dev 서버(`npm run dev`)로 전환해 `secure: false`로 발급. 프로덕션 쿠키 동작은 검증 범위에서 제외된다는 **트레이드오프를 인지하고 선택**                                                                                                                                                                           |
+| **교훈** | 코드(설정값)뿐 아니라 **실행 맥락(prod vs dev)까지 의심**해야 한다. 단일 브라우저만 테스트했다면 놓쳤을 버그                                                                                                                                                                                                                 |
+
+### 2. CI WebKit 로그인 실패 — DOM 값과 React state 불일치
+
+| 항목     | 내용                                                                                                                                                                                                                                                                                         |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **문제** | 로컬에서는 9개 모두 통과하나 CI의 WebKit에서만 로그인 성공 테스트가 실패                                                                                                                                                                                                                     |
+| **원인** | **Playwright trace 분석** 결과, 입력값 검증(`toHaveValue`)은 통과하는데 제출 시 이메일이 빈 값. `fill()`은 DOM input 값은 채우지만, 느린 CI/WebKit 환경에서 React `onChange`를 트리거하지 못해 **제출되는 React state가 비어 있던 것**이 원인 (race condition이라 빠른 로컬에선 우연히 통과) |
+| **해결** | `fill()` → `pressSequentially()`로 한 글자씩 입력해 `onChange`를 확실히 발생시켜 state 동기화 보장                                                                                                                                                                                           |
+| **교훈** | 증상(브라우저 차이)이 아닌 **데이터(trace)로 원인을 규명**한다. "모든 브라우저가 동일하게 실패하면 환경 문제, 특정 브라우저만 실패하면 그 브라우저 특성"                                                                                                                                     |
+
+> 두 사례 모두 **trace·스크린샷 등 실패 아티팩트를 근거로** 추적했습니다. CI는 실패 시 Playwright HTML 리포트를 아티팩트로 보관합니다.
 
 ---
 
 ## 프로젝트 소개
 
-독일 Bochum 어학연수 중 마주쳤던 단어들을 기록하고 싶었는데, 기존 단어장 앱은 단순 암기 위주라 뉘앙스나 예문을 따로 찾아야 했습니다.
-직접 쓸 도구를 직접 만들었습니다.
+독일 Bochum 어학연수 중 마주쳤던 단어들을 기록하고 싶었는데, 기존 단어장 앱은 단순 암기 위주라 뉘앙스나 예문을 따로 찾아야 했습니다. 직접 쓸 도구를 직접 만들었습니다.
 
 **핵심 흐름:**
+
 1. 단어 입력 → Claude AI가 뜻·문법·예문 3개·뉘앙스·학습팁을 스트리밍으로 분석
 2. SM-2 알고리즘이 복습 간격을 계산해 오늘 복습할 단어만 노출
 3. 복습 후 체감 난이도(다시/어려움/좋음/쉬움) 평가 → 다음 복습일 자동 조정
 
----
+### 주요 기능
 
-## 주요 기능
-
-| 기능 | 설명 |
-|---|---|
-| 회원가입 / 로그인 | bcrypt 해싱 + JWT(Access 15분 / Refresh 7일) + HttpOnly Cookie |
-| 단어 CRUD | 추가·인라인 수정·삭제, 다른 사용자 단어 접근 차단(IDOR 방어) |
-| AI 분석 | Claude Haiku 4.5 스트리밍 — 토큰 생성 즉시 화면에 표시, 완료 후 DB 저장 |
-| 복습 시스템 | SM-2 알고리즘 기반 SRS — 오늘 복습할 단어만 카드로 노출 |
-| 빈칸 퀴즈 | AI 예문의 단어를 `____`로 대체, 직접 입력해서 맞히는 퀴즈 |
-| 대시보드 | 학습 현황 전용 — 스탯 카드 4종 / 주간 복습 바 차트 / 복습 대기 CTA |
-| 단어장 | 단어 추가·수정·삭제·AI 분석, 단어·뜻 실시간 검색 필터링 |
-| 인증 미들웨어 | Edge Runtime에서 JWT 검증, 미인증 접근 시 /login 리다이렉트 |
-| 세션 자동 갱신 | Refresh Token Rotation — 만료 시 자동 재발급, 재사용 감지 시 세션 무효화 |
+| 기능              | 설명                                                                     |
+| ----------------- | ------------------------------------------------------------------------ |
+| 회원가입 / 로그인 | bcrypt 해싱 + JWT(Access 15분 / Refresh 7일) + HttpOnly Cookie           |
+| 단어 CRUD         | 추가·인라인 수정·삭제, 다른 사용자 단어 접근 차단(IDOR 방어)             |
+| AI 분석           | Claude Haiku 4.5 스트리밍 — 토큰 생성 즉시 화면 표시, 완료 후 DB 저장    |
+| 복습 시스템       | SM-2 알고리즘 기반 SRS — 오늘 복습할 단어만 카드로 노출                  |
+| 빈칸 퀴즈         | AI 예문의 단어를 `____`로 대체, 직접 입력해 맞히는 퀴즈                  |
+| 대시보드          | 스탯 카드 4종 / 주간 복습 바 차트 / 복습 대기 CTA                        |
+| 단어장            | 단어 추가·수정·삭제·AI 분석, 단어·뜻 실시간 검색 필터링                  |
+| 인증 미들웨어     | Edge Runtime에서 JWT 검증, 미인증 접근 시 `/login` 리다이렉트            |
+| 세션 자동 갱신    | Refresh Token Rotation — 만료 시 자동 재발급, 재사용 감지 시 세션 무효화 |
 
 ---
 
 ## 기술 스택
 
-| 분류 | 기술 |
-|---|---|
-| Frontend / Backend | Next.js 16 (App Router) + TypeScript 5 |
-| Database | Supabase (PostgreSQL, Seoul 리전) |
-| ORM | Prisma 7.8 — driver adapter 방식 (Rust-free) |
-| 인증 | bcrypt 6 + jose 6 (JWT) + HttpOnly Cookie |
-| AI | Anthropic Claude API (`@anthropic-ai/sdk`) |
-| 검증 | Zod 4 |
-| UI | Tailwind CSS 4 + shadcn-ui + Recharts |
-| 테스트 | Jest 30 + React Testing Library |
-| CI/CD | GitHub Actions + Vercel |
+| 분류               | 기술                                             |
+| ------------------ | ------------------------------------------------ |
+| Frontend / Backend | Next.js 16 (App Router) + TypeScript 5           |
+| Database           | Supabase (PostgreSQL, Seoul 리전)                |
+| ORM                | Prisma 7.8 — driver adapter 방식 (Rust-free)     |
+| 인증               | bcrypt 6 + jose 6 (JWT) + HttpOnly Cookie        |
+| AI                 | Anthropic Claude API (`@anthropic-ai/sdk`)       |
+| 검증               | Zod 4                                            |
+| UI                 | Tailwind CSS 4 + shadcn-ui + Recharts            |
+| 테스트             | Jest 30 + React Testing Library + **Playwright** |
+| CI/CD              | GitHub Actions + Vercel                          |
 
 ---
 
@@ -70,30 +163,19 @@ API 요청 → 401
 
 ### 인증: jose vs jsonwebtoken
 
-Edge Runtime(미들웨어)에서 JWT를 검증해야 하는데, `jsonwebtoken`은 Node.js `crypto` 모듈에 의존해 Edge에서 동작하지 않습니다. `jose`는 Web Crypto API 기반이라 Edge 호환됩니다.
-Access/Refresh 토큰 비밀키를 분리해 Access 키가 유출돼도 Refresh 토큰은 안전합니다.
+Edge Runtime(미들웨어)에서 JWT를 검증해야 하는데, `jsonwebtoken`은 Node.js `crypto` 모듈에 의존해 Edge에서 동작하지 않습니다. `jose`는 Web Crypto API 기반이라 Edge 호환됩니다. Access/Refresh 토큰 비밀키를 분리해 Access 키가 유출돼도 Refresh 토큰은 안전합니다.
 
 ### Prisma 7 driver adapter
 
-Prisma 7은 Rust 엔진을 제거하고 JS driver adapter 방식으로 전환됐습니다. `PrismaPg`로 직접 pg 드라이버를 주입해 커넥션을 제어합니다.
-Supabase의 IPv6-only direct 연결 이슈(마이그레이션용 포트 5432 vs 앱 런타임 pooler 포트 6543)를 직접 해결했습니다.
+Prisma 7은 Rust 엔진을 제거하고 JS driver adapter 방식으로 전환됐습니다. `PrismaPg`로 직접 pg 드라이버를 주입해 커넥션을 제어합니다. Supabase의 마이그레이션용 포트(5432)와 앱 런타임 pooler 포트(6543) 분리 이슈를 직접 해결했습니다.
 
 ### AI 스트리밍: ReadableStream
 
-`anthropic.messages.stream()`으로 SSE 이벤트를 받아 `ReadableStream`에 청크 단위로 인코딩해 클라이언트에 즉시 전송합니다.
-스트림이 완료된 시점에 전체 텍스트를 DB에 저장하므로 부분 저장 문제가 없습니다.
-
-```
-Claude API → content_block_delta 이벤트
-  → controller.enqueue(chunk)     ← 클라이언트 실시간 렌더링
-  → fullText 누적
-스트림 종료 → prisma.word.update({ aiAnalysis: { text: fullText } })
-```
+`anthropic.messages.stream()`으로 SSE 이벤트를 받아 `ReadableStream`에 청크 단위로 인코딩해 클라이언트에 즉시 전송합니다. 스트림이 완료된 시점에 전체 텍스트를 DB에 저장하므로 부분 저장 문제가 없습니다.
 
 ### IDOR 방어
 
-수정·삭제·분석·복습 API는 모두 `word.userId === 요청자 userId`를 검증합니다.
-타인의 단어 ID를 직접 호출해도 404를 반환해 존재 여부조차 노출하지 않습니다.
+수정·삭제·분석·복습 API는 모두 `word.userId === 요청자 userId`를 검증합니다. 타인의 단어 ID를 직접 호출해도 404를 반환해 존재 여부조차 노출하지 않습니다.
 
 ### SM-2 알고리즘
 
@@ -110,20 +192,10 @@ grade < 3 (잊음):
   repetitions=0, interval=1일 (리셋)
 
 easeFactor += 0.1 - (5 - grade) × (0.08 + (5 - grade) × 0.02)
-easeFactor = max(easeFactor, 1.3)   // 하한: 너무 낮아지면 복습 간격이 거의 늘지 않음
+easeFactor = max(easeFactor, 1.3)
 ```
 
 순수 함수라 외부 의존성 없이 17개 단위 테스트로 모든 경계 조건을 검증했습니다.
-
-### 테스트 전략
-
-| 레이어 | 파일 | 방식 |
-|---|---|---|
-| 알고리즘 단위 | `app/lib/srs.test.ts` | Jest, 순수 함수 — 17케이스 |
-| API 라우트 | `app/api/words/[id]/review/route.test.ts` | Jest + Prisma/auth 모킹 — 8케이스 |
-| 컴포넌트 | `app/review/page.test.tsx` | RTL + fetch 모킹 — 9케이스 |
-
-API 라우트 테스트는 Prisma와 auth를 모킹해 DB 없는 환경(CI)에서도 라우트 로직만 검증합니다.
 
 ---
 
@@ -135,12 +207,7 @@ npm install
 
 # 2. 환경변수 설정
 cp .env.example .env
-# .env에 아래 값 입력:
-# DATABASE_URL      — Supabase pooler URL (포트 6543)
-# DIRECT_URL        — Supabase session mode URL (포트 5432)
-# JWT_ACCESS_SECRET
-# JWT_REFRESH_SECRET
-# ANTHROPIC_API_KEY
+# DATABASE_URL, DIRECT_URL, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, ANTHROPIC_API_KEY 입력
 
 # 3. DB 마이그레이션
 npx prisma migrate dev
@@ -149,21 +216,10 @@ npx prisma migrate dev
 npm run dev
 ```
 
----
-
-## 테스트
+### 테스트 실행
 
 ```bash
-npm test
+npm test                      # 단위·통합·컴포넌트 (Jest) — 34개
+npx playwright test           # E2E (Playwright) — 9개
+npx playwright show-report    # E2E 결과 리포트 확인
 ```
-
-전체 34개 테스트 통과 (SM-2 단위 17 + API 라우트 8 + 컴포넌트 9)
-
----
-
-## CI/CD
-
-- **GitHub Actions** — `main` push/PR 시 자동으로 타입 체크 + 테스트 실행
-- **Vercel** — `main` push 시 자동 배포
-
-빌드 스크립트에 `prisma generate`를 포함해 Vercel 환경에서 Prisma 클라이언트를 자동 생성합니다.
