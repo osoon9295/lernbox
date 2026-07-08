@@ -5,7 +5,7 @@
 > **품질 관점 요약:** 단위·통합·컴포넌트·E2E **4단 테스트 피라미드**를 갖춘 프로젝트에서, E2E 자동화와 CI 파이프라인을 직접 구축하고, AI가 생성한 하위 테스트를 **직접 검증**했습니다. 크로스 브라우저 환경에서 발견한 버그 2건을 **trace 기반으로 추적·해결**했습니다.
 
 ![CI](https://github.com/osoon9295/lernbox/actions/workflows/ci.yml/badge.svg)
-![E2E](https://github.com/osoon9295/lernbox/actions/workflows/playwright.yml/badge.svg)
+![Playwright Tests](https://github.com/osoon9295/lernbox/actions/workflows/playwright.yml/badge.svg)
 
 **배포:** https://lernbox.vercel.app
 **GitHub:** https://github.com/osoon9295/lernbox
@@ -66,6 +66,8 @@
 - 로그인 핵심 흐름을 검증: 성공 / 잘못된 비밀번호 / 빈 값 / **User Enumeration 방어**(실패 메시지 통일 확인).
 - **auto-waiting** 기반 — 고정 대기(`sleep`) 없이 조건 충족까지 재시도해 플래키 테스트를 방지합니다.
 - Chromium·Firefox·**WebKit** 3개 브라우저에서 교차 검증.
+
+![E2E 테스트 결과 — 3개 브라우저 9개 통과](docs/e2e-report.png)
 
 ### CI 파이프라인 (GitHub Actions) — 직접 구성
 
