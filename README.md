@@ -2,6 +2,8 @@
 
 > 독일어 AI 단어장 — Next.js 풀스택 개인 프로젝트
 >
+> **이 프로젝트는 Claude Code로 구현했으며 그 코드를 이해·검증·보강하는 QA 역할에 중점을 맞춘 프로젝트입니다.**
+>
 > **품질 관점 요약:** 단위·통합·컴포넌트·E2E **4단 테스트 피라미드**를 구축하고, GitHub Actions CI에서 **임시 PostgreSQL을 프로비저닝**해 3개 브라우저(Chromium·Firefox·WebKit) E2E를 자동 실행합니다. 크로스 브라우저 환경에서 발견한 버그 2건을 **trace 기반으로 추적·해결**했습니다.
 
 ![CI](https://github.com/osoon9295/lernbox/actions/workflows/ci.yml/badge.svg)
@@ -32,11 +34,11 @@
 | 레이어            | 파일                                      | 방식                               | 케이스 |
 | ----------------- | ----------------------------------------- | ---------------------------------- | ------ |
 | 단위 (알고리즘)   | `app/lib/srs.test.ts`                     | Jest — 순수 함수, 경계값 검증      | 17     |
-| 통합 (API 라우트) | `app/api/words/[id]/review/route.test.ts` | Jest + Prisma/auth 모킹            | 8      |
+| 통합 (API 라우트) | `app/api/words/[id]/review/route.test.ts` | Jest + Prisma/auth 모킹            | 9      |
 | 컴포넌트          | `app/review/page.test.tsx`                | React Testing Library + fetch 모킹 | 9      |
 | E2E               | `tests/login.spec.ts`                     | Playwright (POM) × 3 브라우저      | 9      |
 
-> 단위·통합·컴포넌트 합계 34개 + E2E 9개. CI에서 push/PR마다 전체 자동 실행.
+> 단위·통합·컴포넌트 합계 35개 + E2E 9개. CI에서 push/PR마다 전체 자동 실행.
 
 ### E2E 자동화 (Playwright)
 

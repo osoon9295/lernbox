@@ -2,15 +2,18 @@
  * @jest-environment jsdom
  */
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import ReviewPage from "./page";
 
 // next/link는 jsdom에서 동작하지 않으므로 단순 앵커로 대체
 jest.mock("next/link", () => ({
   __esModule: true,
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
-  ),
+  default: ({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => <a href={href}>{children}</a>,
 }));
 
 // shadcn 컴포넌트는 실제 DOM 요소로 렌더링되므로 별도 모킹 불필요
@@ -64,7 +67,9 @@ describe("ReviewPage", () => {
     render(<ReviewPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("오늘 복습할 단어가 없습니다!")).toBeInTheDocument();
+      expect(
+        screen.getByText("오늘 복습할 단어가 없습니다!"),
+      ).toBeInTheDocument();
     });
     expect(screen.getByText("단어장으로 돌아가기")).toBeInTheDocument();
   });
@@ -126,11 +131,17 @@ describe("ReviewPage", () => {
     await waitFor(() => {
       expect(screen.getByText(/복습 완료!/)).toBeInTheDocument();
     });
-    expect(screen.getByText("수고했습니다. 다음 복습일에 다시 만나요.")).toBeInTheDocument();
+    expect(
+      screen.getByText("수고했습니다. 다음 복습일에 다시 만나요."),
+    ).toBeInTheDocument();
   });
 
   test("단어 2개: 첫 카드 완료 후 두 번째 카드로 이동", async () => {
-    const word2 = mockWord({ id: "word-2", word: "Weltschmerz", meaning: "세계의 고통" });
+    const word2 = mockWord({
+      id: "word-2",
+      word: "Weltschmerz",
+      meaning: "세계의 고통",
+    });
     mockFetchReview([mockWord(), word2]);
     mockFetchReviewPost();
     render(<ReviewPage />);
@@ -161,7 +172,9 @@ describe("ReviewPage", () => {
 
     await waitFor(() => {
       const calls = (global.fetch as jest.Mock).mock.calls;
-      const reviewCall = calls.find((c) => c[0].includes("/review") && c[1]?.method === "POST");
+      const reviewCall = calls.find(
+        (c) => c[0].includes("/review") && c[1]?.method === "POST",
+      );
       expect(reviewCall).toBeDefined();
       expect(JSON.parse(reviewCall[1].body)).toEqual({ grade: 0 });
     });
