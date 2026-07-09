@@ -1,7 +1,7 @@
 # Lernbox
 
-> 독일어 AI 단어장 — Next.js 풀스택 개인 프로젝트
->
+> 독일어 AI 단어장 - QA/SDET 관점에서 테스트 자동화와 품질 보증을 적용한 Next.js 프로젝트
+> 
 > **품질 관점 요약:** 단위·통합·컴포넌트·E2E **4단 테스트 피라미드**를 갖춘 프로젝트에서, E2E 자동화와 CI 파이프라인을 직접 구축하고, AI가 생성한 하위 테스트를 **직접 검증**했습니다. 크로스 브라우저 환경에서 발견한 버그 2건을 **trace 기반으로 추적·해결**했습니다.
 
 ![CI](https://github.com/osoon9295/lernbox/actions/workflows/ci.yml/badge.svg)
